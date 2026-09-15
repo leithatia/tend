@@ -129,6 +129,16 @@ input[type="text"]:focus, button:focus-visible {
   padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
 }
 
+#listContainer {
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+#listContainer.slide-out-left { transform: translateX(-16px); opacity: 0; }
+#listContainer.slide-out-right { transform: translateX(16px); opacity: 0; }
+#listContainer.slide-in-left { transform: translateX(-16px); opacity: 0; }
+#listContainer.slide-in-right { transform: translateX(16px); opacity: 0; }
+#listContainer.no-anim { transition: none !important; }
+
 /* ---------- Header ---------- */
 .app-header {
   display: flex;

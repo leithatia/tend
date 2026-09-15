@@ -38,13 +38,45 @@ const SECTION_META = {
   evening: { label: 'Evening', icon: ICONS.moon },
 };
 
-async function refresh() {
+async function refresh(direction) {
   const [tasks, exceptions, completions] = await Promise.all([
     Tasks.getAll(),
     Exceptions.getAll(),
     Completions.getAll(),
   ]);
-  render(buildListForDate(tasks, exceptions, completions, selectedDate, selectedWeekday));
+  const items = buildListForDate(tasks, exceptions, completions, selectedDate, selectedWeekday);
+  if (direction) {
+    animateSwap(items, direction);
+  } else {
+    render(items);
+  }
+}
+
+// Simple slide+fade crossfade so switching days reads like turning a page,
+// rather than the list just instantly changing underneath you.
+function animateSwap(items, direction) {
+  const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
+  const inClass = direction === 'forward' ? 'slide-in-right' : 'slide-in-left';
+  let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    listContainer.removeEventListener('transitionend', finish);
+    clearTimeout(fallback);
+    render(items);
+    listContainer.classList.remove(outClass);
+    listContainer.classList.add('no-anim', inClass);
+    void listContainer.offsetWidth; // force reflow so the next class removal animates
+    listContainer.classList.remove('no-anim');
+    requestAnimationFrame(() => {
+      listContainer.classList.remove(inClass);
+    });
+  }
+
+  const fallback = setTimeout(finish, 200);
+  listContainer.addEventListener('transitionend', finish, { once: true });
+  listContainer.classList.add(outClass);
 }
 
 // Only one row's swipe actions are revealed at a time; this closes whichever
@@ -276,11 +308,12 @@ function renderDayStrip() {
 
 function selectDay(idx) {
   if (idx === selectedWeekday) return;
+  const direction = idx > selectedWeekday ? 'forward' : 'backward';
   selectedWeekday = idx;
   selectedDate = getWeekDates()[idx];
   updateHeader();
   renderDayStrip();
-  refresh();
+  refresh(direction);
 }
 
 // Swipe left/right over the day strip or the page background to move to the
