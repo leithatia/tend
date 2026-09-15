@@ -55,8 +55,13 @@
   --radius-sm: 8px;
 }
 
+/* Light palette applies on system preference, unless overridden by the
+ * in-app toggle (data-theme, set by js/app.js and persisted to
+ * localStorage) — the same palette is also defined unconditionally under
+ * [data-theme="light"] so the forced choice wins regardless of system
+ * preference. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     color-scheme: light;
     --bg: #f3ecda;
     --surface-1: #faf6ec;
@@ -98,6 +103,49 @@
 
     --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.12);
   }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3ecda;
+  --surface-1: #faf6ec;
+  --surface-2: #faf6ec;
+  --surface-3: #ece0c4;
+  --border: rgba(30, 45, 30, 0.1);
+  --border-accent: #245c3a;
+  --border-danger: rgba(160, 55, 40, 0.4);
+
+  --text-primary: #23301f;
+  --text-secondary: #5f6b52;
+  --text-muted: #8b8570;
+  --text-danger: #a3392b;
+
+  --fill-accent: #245c3a;
+  --fill-secondary: #ece0c4;
+  --fill-danger: #a3392b;
+  --on-accent: #f3ecda;
+  --on-danger: #f7f0e0;
+
+  /* Sage (foliage) */
+  --bg-tint-blue: rgba(110, 150, 80, 0.16);
+  --text-tint-blue: #4c6b34;
+  /* Dusk plum */
+  --bg-tint-purple: rgba(110, 75, 85, 0.16);
+  --text-tint-purple: #6b4652;
+  /* Water teal */
+  --bg-tint-green: rgba(60, 130, 120, 0.16);
+  --text-tint-green: #276358;
+  /* Boat-wood terracotta */
+  --bg-tint-orange: rgba(180, 105, 55, 0.16);
+  --text-tint-orange: #8a4d1e;
+  /* Warm rose */
+  --bg-tint-pink: rgba(170, 90, 80, 0.16);
+  --text-tint-pink: #8a4436;
+  /* House stone */
+  --bg-tint-gray: rgba(140, 125, 95, 0.16);
+  --text-tint-gray: #6b5c40;
+
+  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.12);
 }
 
 * {

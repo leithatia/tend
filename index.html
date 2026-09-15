@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Tend</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('dp_theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <meta name="theme-color" content="#0f1a13" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -111,6 +119,7 @@
       <p>Backup</p>
       <button class="icon-btn" id="settingsClose" aria-label="Close"></button>
     </div>
+    <button class="row-btn" id="themeToggleBtn"></button>
     <button class="row-btn" id="exportBtn"></button>
     <button class="row-btn" id="importBtn"></button>
     <input type="file" accept="application/json" id="importFileInput" class="file-input" />

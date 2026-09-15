@@ -615,6 +615,28 @@ settingsOverlay.addEventListener('click', (e) => {
   if (e.target === settingsOverlay) settingsOverlay.hidden = true;
 });
 
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+function currentTheme() {
+  const forced = document.documentElement.getAttribute('data-theme');
+  if (forced === 'light' || forced === 'dark') return forced;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+function renderThemeToggle() {
+  const isLight = currentTheme() === 'light';
+  themeToggleBtn.innerHTML = isLight
+    ? `${ICONS.moon}<span>Switch to dark mode</span>`
+    : `${ICONS.sun}<span>Switch to light mode</span>`;
+  document.querySelector('meta[name="theme-color"]')
+    .setAttribute('content', isLight ? '#f3ecda' : '#0f1a13');
+}
+themeToggleBtn.addEventListener('click', () => {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('dp_theme', next);
+  renderThemeToggle();
+});
+renderThemeToggle();
+
 const exportBtn = document.getElementById('exportBtn');
 exportBtn.innerHTML = `${ICONS.download}<span>Export data (JSON)</span>`;
 exportBtn.addEventListener('click', async () => {
