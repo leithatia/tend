@@ -128,7 +128,7 @@ export async function exportAll() {
     Completions.getAll(),
   ]);
   return {
-    app: 'daily-planner',
+    app: 'tend',
     schemaVersion: DB_VERSION,
     exportedAt: new Date().toISOString(),
     tasks,
@@ -139,7 +139,7 @@ export async function exportAll() {
 
 export async function importAll(data) {
   if (!data || !Array.isArray(data.tasks)) {
-    throw new Error('That file does not look like a daily-planner backup.');
+    throw new Error('That file does not look like a Tend backup.');
   }
   const db = await openDB();
   const t = db.transaction(['tasks', 'exceptions', 'completions'], 'readwrite');

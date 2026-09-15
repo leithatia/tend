@@ -1,7 +1,7 @@
 {
-  "name": "Daily Planner",
-  "short_name": "Planner",
-  "description": "A simple offline daily habit checklist.",
+  "name": "Tend",
+  "short_name": "Tend",
+  "description": "A quiet, offline daily habit checklist.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

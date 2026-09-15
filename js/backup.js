@@ -26,7 +26,7 @@ export async function downloadExport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `daily-planner-backup-${data.exportedAt.slice(0, 10)}.json`;
+  a.download = `tend-backup-${data.exportedAt.slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
