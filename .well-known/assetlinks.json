@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.leithatia.twa",
+      "sha256_cert_fingerprints": [
+        "8B:EF:90:D2:7D:62:69:CF:92:E1:D1:55:86:48:33:C3:D0:EE:22:9B:03:B5:37:A6:6D:28:1B:6D:B6:6B:BB:34"
+      ]
+    }
+  }
+]
