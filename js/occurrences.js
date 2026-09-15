@@ -1,16 +1,12 @@
-import { todayISO, todayWeekdayIndex } from './date.js';
-
 export function isScheduledOn(task, dateISO, weekdayIndex) {
   if (task.recurrence.type === 'once') return task.recurrence.date === dateISO;
   return task.recurrence.days.includes(weekdayIndex);
 }
 
-// Combines tasks + today's exceptions + today's completions into the list
-// that should actually render for "today". Skips are dropped, overrides are
-// applied, and each item carries whether it's currently checked off.
-export function buildTodayList(tasks, exceptions, completions) {
-  const date = todayISO();
-  const weekday = todayWeekdayIndex();
+// Combines tasks + that date's exceptions + that date's completions into the
+// list that should actually render for the given day. Skips are dropped,
+// overrides are applied, and each item carries whether it's checked off.
+export function buildListForDate(tasks, exceptions, completions, date, weekday) {
   const exceptionByTask = new Map(exceptions.filter((e) => e.date === date).map((e) => [e.taskId, e]));
   const completedTaskIds = new Set(completions.filter((c) => c.date === date).map((c) => c.taskId));
 

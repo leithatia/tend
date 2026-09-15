@@ -1,17 +1,11 @@
 import { ICONS } from './icons.js';
-import { WEEKDAY_LABELS, WEEKDAY_NAMES, todayWeekdayIndex, getWeekDates } from './date.js';
+import {
+  WEEKDAY_LABELS, WEEKDAY_NAMES, todayWeekdayIndex,
+  weekdayIndexForDate, dateForWeekdayIndex,
+} from './date.js';
 
 let els = {};
 let state = null;
-
-function weekdayIndexForDate(dateStr) {
-  const idx = getWeekDates().indexOf(dateStr);
-  return idx === -1 ? todayWeekdayIndex() : idx;
-}
-
-function dateForWeekdayIndex(idx) {
-  return getWeekDates()[idx];
-}
 
 export function initTaskForm() {
   els = {
@@ -74,7 +68,7 @@ export function initTaskForm() {
       } else if (quick === 'once') {
         state.onceMode = true;
         const existing = [...state.selectedDays][0];
-        state.selectedDays = new Set([existing !== undefined ? existing : todayWeekdayIndex()]);
+        state.selectedDays = new Set([existing !== undefined ? existing : state.defaultDay]);
       }
       paintDays();
     });
@@ -178,8 +172,10 @@ function onSaveClick() {
   onSubmit(formData);
 }
 
-export function openTaskFormForAdd(onSubmit) {
-  state = { selectedTime: null, selectedDays: new Set(), onceMode: false, onSubmit };
+export function openTaskFormForAdd(onSubmit, defaultDay = todayWeekdayIndex()) {
+  state = {
+    selectedTime: null, selectedDays: new Set(), onceMode: false, defaultDay, onSubmit,
+  };
   els.title.textContent = 'Add task';
   els.save.textContent = 'Save task';
   els.name.value = '';

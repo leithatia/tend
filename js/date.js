@@ -51,10 +51,30 @@ export function getWeekDates() {
 
 export const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const WEEKDAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Weekday index (0=Mon..6=Sun) of a date within the current Mon..Sun week.
+// Falls back to today if the date isn't in the current week (e.g. stale data).
+export function weekdayIndexForDate(dateISO) {
+  const idx = getWeekDates().indexOf(dateISO);
+  return idx === -1 ? todayWeekdayIndex() : idx;
+}
+
+// The actual date (YYYY-MM-DD) for a weekday index within the current week.
+export function dateForWeekdayIndex(idx) {
+  return getWeekDates()[idx];
+}
+
+export function formatMonthDay(dateISO) {
+  const [, month, day] = dateISO.split('-').map(Number);
+  return `${MONTHS[month - 1]} ${day}`;
+}
+
+export function formatHeadingForDate(dateISO) {
+  const idx = weekdayIndexForDate(dateISO);
+  return `${WEEKDAY_NAMES[idx]}, ${formatMonthDay(dateISO)}`;
+}
 
 export function formatTodayHeading() {
-  const idx = todayWeekdayIndex();
-  const { day, month } = getZonedParts();
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${WEEKDAY_NAMES[idx]}, ${MONTHS[month - 1]} ${day}`;
+  return formatHeadingForDate(todayISO());
 }

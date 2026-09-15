@@ -1,6 +1,9 @@
 import { Tasks, Exceptions, Completions, deleteTaskCascade } from './db.js';
-import { buildTodayList, groupByTimeOfDay } from './occurrences.js';
-import { formatTodayHeading, WEEKDAY_NAMES } from './date.js';
+import { buildListForDate, groupByTimeOfDay } from './occurrences.js';
+import {
+  todayISO, todayWeekdayIndex, getWeekDates, weekdayIndexForDate,
+  WEEKDAY_NAMES, WEEKDAY_LABELS, formatMonthDay,
+} from './date.js';
 import { emojiForCategory, tintForCategory } from './categories.js';
 import { ICONS } from './icons.js';
 import { initTaskForm, openTaskFormForAdd, openTaskFormForEdit } from './taskForm.js';
@@ -8,9 +11,18 @@ import { initActionSheet, openActionSheet } from './actionSheet.js';
 import { downloadExport, importFromFile } from './backup.js';
 
 const listContainer = document.getElementById('listContainer');
+const dayHeading = document.getElementById('dayHeading');
 const dateSub = document.getElementById('dateSub');
+const dayStrip = document.getElementById('dayStrip');
 const toast = document.getElementById('toast');
 let toastTimer = null;
+
+let selectedWeekday = todayWeekdayIndex();
+let selectedDate = todayISO();
+
+function dayPhrase(dateISO) {
+  return dateISO === todayISO() ? 'today' : WEEKDAY_NAMES[weekdayIndexForDate(dateISO)];
+}
 
 function showToast(message) {
   toast.textContent = message;
@@ -31,7 +43,7 @@ async function refresh() {
     Exceptions.getAll(),
     Completions.getAll(),
   ]);
-  render(buildTodayList(tasks, exceptions, completions));
+  render(buildListForDate(tasks, exceptions, completions, selectedDate, selectedWeekday));
 }
 
 function render(items) {
@@ -39,9 +51,12 @@ function render(items) {
   listContainer.innerHTML = '';
 
   if (items.length === 0) {
+    const isToday = selectedDate === todayISO();
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = 'Nothing on the list for today. Tap + to add a task.';
+    empty.textContent = isToday
+      ? 'Nothing on the list for today. Tap + to add a task.'
+      : `Nothing on ${WEEKDAY_NAMES[selectedWeekday]}'s list. Tap + to add a task.`;
     listContainer.appendChild(empty);
     return;
   }
@@ -116,6 +131,75 @@ async function toggleCompletion(item) {
   await refresh();
 }
 
+// ---------- Day strip (see the week / jump to a day) ----------
+function updateHeader() {
+  const isToday = selectedDate === todayISO();
+  dayHeading.textContent = isToday ? 'Today' : WEEKDAY_NAMES[selectedWeekday];
+  dateSub.textContent = formatMonthDay(selectedDate);
+}
+
+function renderDayStrip() {
+  const weekDates = getWeekDates();
+  const todayDate = todayISO();
+  dayStrip.innerHTML = '';
+
+  weekDates.forEach((date, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'day-strip-btn';
+    if (date === todayDate) btn.classList.add('today');
+    if (idx === selectedWeekday) btn.classList.add('selected');
+
+    const dow = document.createElement('span');
+    dow.className = 'dow';
+    dow.textContent = WEEKDAY_LABELS[idx];
+
+    const dom = document.createElement('span');
+    dom.className = 'dom';
+    dom.textContent = String(Number(date.slice(-2)));
+
+    btn.appendChild(dow);
+    btn.appendChild(dom);
+    if (date === todayDate) {
+      const dot = document.createElement('span');
+      dot.className = 'today-dot';
+      btn.appendChild(dot);
+    }
+
+    btn.addEventListener('click', () => selectDay(idx));
+    dayStrip.appendChild(btn);
+  });
+}
+
+function selectDay(idx) {
+  if (idx === selectedWeekday) return;
+  selectedWeekday = idx;
+  selectedDate = getWeekDates()[idx];
+  updateHeader();
+  renderDayStrip();
+  refresh();
+}
+
+// Swipe left/right over the task list to move to the next/previous day,
+// clamped to the current week (the app doesn't track other weeks).
+let touchStartX = 0;
+let touchStartY = 0;
+listContainer.addEventListener('touchstart', (e) => {
+  const t = e.changedTouches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, { passive: true });
+
+listContainer.addEventListener('touchend', (e) => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  const next = selectedWeekday + (dx < 0 ? 1 : -1);
+  if (next < 0 || next > 6) return;
+  selectDay(next);
+}, { passive: true });
+
 // ---------- Add task ----------
 const addTaskFab = document.getElementById('addTaskFab');
 addTaskFab.innerHTML = ICONS.plus;
@@ -132,7 +216,7 @@ addTaskFab.addEventListener('click', () => {
     await Tasks.put(task);
     await refresh();
     showToast('Task added.');
-  });
+  }, selectedWeekday);
 });
 
 // ---------- Edit / delete (via action sheet) ----------
@@ -143,7 +227,7 @@ initActionSheet({
   onDeleteOnce: async (item) => {
     await Exceptions.put({ taskId: item.sourceTask.id, date: item.date, type: 'skip' });
     await refresh();
-    showToast('Removed for today.');
+    showToast(`Removed for ${dayPhrase(item.date)}.`);
   },
   onDeleteAll: async (item) => {
     await deleteTaskCascade(item.sourceTask.id);
@@ -193,6 +277,8 @@ async function handleEditSubmit(item, formData) {
   pendingScopeEdit = { source, formData, date: item.date };
   const dayNames = source.recurrence.days.map((i) => WEEKDAY_NAMES[i]).join(', ');
   editScopeSubtitle.textContent = `This task repeats on ${dayNames}.`;
+  const phrase = dayPhrase(item.date);
+  editScopeOnceBtn.textContent = phrase === 'today' ? 'Just today' : `Just ${phrase}`;
   editScopeOverlay.hidden = false;
 }
 
@@ -217,7 +303,7 @@ editScopeOnceBtn.addEventListener('click', async () => {
   editScopeOverlay.hidden = true;
   pendingScopeEdit = null;
   await refresh();
-  showToast('Changed for today only.');
+  showToast(`Changed for ${dayPhrase(date)} only.`);
 });
 
 editScopeAllBtn.addEventListener('click', async () => {
@@ -270,7 +356,8 @@ importFileInput.addEventListener('change', async () => {
 });
 
 // ---------- Boot ----------
-dateSub.textContent = formatTodayHeading();
+updateHeader();
+renderDayStrip();
 initTaskForm();
 refresh();
 

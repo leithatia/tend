@@ -1,5 +1,5 @@
 import { ICONS } from './icons.js';
-import { WEEKDAY_NAMES, todayWeekdayIndex } from './date.js';
+import { WEEKDAY_NAMES, todayISO, weekdayIndexForDate } from './date.js';
 
 let els = {};
 let callbacks = {};
@@ -73,10 +73,11 @@ function showDeleteConfirm() {
     els.allBtn.textContent = 'Delete';
   } else {
     const dayNames = sourceTask.recurrence.days.map((i) => WEEKDAY_NAMES[i]).join(', ');
-    const todayName = WEEKDAY_NAMES[todayWeekdayIndex()];
+    const viewedDayName = WEEKDAY_NAMES[weekdayIndexForDate(currentItem.date)];
+    const isToday = currentItem.date === todayISO();
     els.confirmTitle.textContent = `This task repeats on ${dayNames}.`;
     els.onceBtn.hidden = false;
-    els.onceBtn.textContent = `Just today (${todayName})`;
+    els.onceBtn.textContent = isToday ? `Just today (${viewedDayName})` : `Just ${viewedDayName}`;
     els.allBtn.textContent = 'Remove from all days';
   }
   show(els.confirmOverlay);
