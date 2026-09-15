@@ -450,9 +450,11 @@ appRoot.addEventListener('touchmove', (e) => {
   updatePagerDrag(dx);
 }, { passive: true });
 
+const PAGER_COMMIT_RATIO = 0.18; // fraction of the width you need to drag before it commits
+
 function endPagerDrag() {
   if (dragMode === 'pager' && pager) {
-    settlePagerDrag(Math.abs(pager.lastDx) > pager.width * 0.35);
+    settlePagerDrag(Math.abs(pager.lastDx) > pager.width * PAGER_COMMIT_RATIO);
   }
   dragMode = null;
 }
