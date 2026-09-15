@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-planner-v3';
+const CACHE_NAME = 'daily-planner-v4';
 
 const APP_SHELL = [
   './',

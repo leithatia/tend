@@ -255,7 +255,48 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 /* ---------- Task row ---------- */
+.task-row-wrap {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.task-row-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.row-action {
+  width: 64px;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.row-action svg {
+  width: 20px;
+  height: 20px;
+}
+
+.row-action.edit {
+  background: var(--fill-accent);
+  color: var(--on-accent);
+}
+
+.row-action.delete {
+  background: var(--fill-danger);
+  color: var(--on-danger);
+}
+
 .task-row {
+  position: relative;
   background: var(--surface-2);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-md);
@@ -263,6 +304,14 @@ input[type="text"]:focus, button:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.task-row-wrap .task-row {
+  transition: transform 0.18s ease;
+}
+
+.task-row-wrap.dragging .task-row {
+  transition: none;
 }
 
 .task-checkbox {

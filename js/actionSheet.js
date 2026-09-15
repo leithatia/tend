@@ -63,6 +63,14 @@ export function openActionSheet(item) {
   show(els.actionOverlay);
 }
 
+// Jumps straight to the delete-confirm sheet for an item, skipping the
+// Edit/Delete/Cancel sheet — used by the row swipe-to-delete action, where
+// the gesture itself already signals delete intent.
+export function openDeleteConfirmForItem(item) {
+  currentItem = item;
+  showDeleteConfirm();
+}
+
 function showDeleteConfirm() {
   hide(els.actionOverlay);
   const sourceTask = currentItem.sourceTask;

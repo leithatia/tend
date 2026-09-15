@@ -7,9 +7,10 @@ import {
 import { emojiForCategory, tintForCategory } from './categories.js';
 import { ICONS } from './icons.js';
 import { initTaskForm, openTaskFormForAdd, openTaskFormForEdit } from './taskForm.js';
-import { initActionSheet, openActionSheet } from './actionSheet.js';
+import { initActionSheet, openActionSheet, openDeleteConfirmForItem } from './actionSheet.js';
 import { downloadExport, importFromFile } from './backup.js';
 
+const appRoot = document.getElementById('app');
 const listContainer = document.getElementById('listContainer');
 const dayHeading = document.getElementById('dayHeading');
 const dateSub = document.getElementById('dateSub');
@@ -46,9 +47,14 @@ async function refresh() {
   render(buildListForDate(tasks, exceptions, completions, selectedDate, selectedWeekday));
 }
 
+// Only one row's swipe actions are revealed at a time; this closes whichever
+// one is currently open. Reset whenever the list is rebuilt.
+let closeOpenRow = null;
+
 function render(items) {
   const groups = groupByTimeOfDay(items);
   listContainer.innerHTML = '';
+  closeOpenRow = null;
 
   if (items.length === 0) {
     const isToday = selectedDate === todayISO();
@@ -82,7 +88,30 @@ function render(items) {
   }
 }
 
+const ROW_REVEAL = 128; // two 64px action buttons
+
 function renderTaskRow(item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'task-row-wrap';
+
+  const actions = document.createElement('div');
+  actions.className = 'task-row-actions';
+
+  const editAction = document.createElement('button');
+  editAction.type = 'button';
+  editAction.className = 'row-action edit';
+  editAction.setAttribute('aria-label', 'Edit task');
+  editAction.innerHTML = ICONS.edit;
+
+  const deleteAction = document.createElement('button');
+  deleteAction.type = 'button';
+  deleteAction.className = 'row-action delete';
+  deleteAction.setAttribute('aria-label', 'Delete task');
+  deleteAction.innerHTML = ICONS.trash;
+
+  actions.appendChild(editAction);
+  actions.appendChild(deleteAction);
+
   const row = document.createElement('div');
   row.className = 'task-row' + (item.completed ? ' completed' : '');
 
@@ -91,7 +120,6 @@ function renderTaskRow(item) {
   checkbox.className = 'task-checkbox';
   checkbox.setAttribute('aria-label', item.completed ? 'Mark not done' : 'Mark done');
   checkbox.innerHTML = ICONS.check;
-  checkbox.addEventListener('click', () => toggleCompletion(item));
 
   const labelBtn = document.createElement('button');
   labelBtn.type = 'button';
@@ -108,7 +136,6 @@ function renderTaskRow(item) {
     note.textContent = 'Edited for today only';
     labelBtn.appendChild(note);
   }
-  labelBtn.addEventListener('click', () => openActionSheet(item));
 
   const tag = document.createElement('span');
   tag.className = `tag tag-${tintForCategory(item.task.category)}`;
@@ -117,7 +144,83 @@ function renderTaskRow(item) {
   row.appendChild(checkbox);
   row.appendChild(labelBtn);
   row.appendChild(tag);
-  return row;
+  wrap.appendChild(actions);
+  wrap.appendChild(row);
+
+  // ----- swipe-to-reveal (edit / delete) -----
+  let isOpen = false;
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let baseX = 0;
+
+  function setX(x, animate) {
+    wrap.classList.toggle('dragging', !animate);
+    row.style.transform = x === 0 ? '' : `translateX(${x}px)`;
+  }
+
+  function close() {
+    isOpen = false;
+    setX(0, true);
+  }
+
+  wrap.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    baseX = isOpen ? -ROW_REVEAL : 0;
+    dragging = false;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (!dragging) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      dragging = true;
+      if (closeOpenRow && closeOpenRow !== close) closeOpenRow();
+      closeOpenRow = close;
+    }
+    const x = Math.min(0, Math.max(-ROW_REVEAL, baseX + dx));
+    setX(x, false);
+  }, { passive: true });
+
+  wrap.addEventListener('touchend', (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    isOpen = (baseX + dx) < -ROW_REVEAL / 2;
+    setX(isOpen ? -ROW_REVEAL : 0, true);
+    if (isOpen) closeOpenRow = close;
+  }, { passive: true });
+
+  checkbox.addEventListener('click', () => {
+    if (isOpen) { close(); return; }
+    toggleCompletion(item);
+  });
+
+  labelBtn.addEventListener('click', () => {
+    if (isOpen) { close(); return; }
+    openActionSheet(item);
+  });
+
+  editAction.addEventListener('click', () => {
+    close();
+    startEdit(item);
+  });
+
+  deleteAction.addEventListener('click', () => {
+    close();
+    openDeleteConfirmForItem(item);
+  });
+
+  return wrap;
+}
+
+function startEdit(item) {
+  openTaskFormForEdit(item.sourceTask, (formData) => handleEditSubmit(item, formData));
 }
 
 async function toggleCompletion(item) {
@@ -180,17 +283,21 @@ function selectDay(idx) {
   refresh();
 }
 
-// Swipe left/right over the task list to move to the next/previous day,
-// clamped to the current week (the app doesn't track other weeks).
+// Swipe left/right over the day strip or the page background to move to the
+// next/previous day, clamped to the current week. Swipes starting on a task
+// row are left alone — those belong to the row's own swipe-to-reveal actions.
 let touchStartX = 0;
 let touchStartY = 0;
-listContainer.addEventListener('touchstart', (e) => {
+let touchStartOnRow = false;
+appRoot.addEventListener('touchstart', (e) => {
   const t = e.changedTouches[0];
   touchStartX = t.clientX;
   touchStartY = t.clientY;
+  touchStartOnRow = !!e.target.closest('.task-row-wrap');
 }, { passive: true });
 
-listContainer.addEventListener('touchend', (e) => {
+appRoot.addEventListener('touchend', (e) => {
+  if (touchStartOnRow) return;
   const t = e.changedTouches[0];
   const dx = t.clientX - touchStartX;
   const dy = t.clientY - touchStartY;
@@ -221,9 +328,7 @@ addTaskFab.addEventListener('click', () => {
 
 // ---------- Edit / delete (via action sheet) ----------
 initActionSheet({
-  onEdit: (item) => {
-    openTaskFormForEdit(item.sourceTask, (formData) => handleEditSubmit(item, formData));
-  },
+  onEdit: startEdit,
   onDeleteOnce: async (item) => {
     await Exceptions.put({ taskId: item.sourceTask.id, date: item.date, type: 'skip' });
     await refresh();
