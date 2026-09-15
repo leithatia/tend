@@ -350,6 +350,7 @@ let pager = null;
 let dragStartX = 0;
 let dragStartY = 0;
 let dragMode = null; // null | 'row' | 'pager' | 'blocked'
+const PAGE_GAP = 16; // visible breathing room between the two panels while dragging
 
 function startPagerDrag(dir) {
   const previewIdx = selectedWeekday + (dir === 'forward' ? 1 : -1);
@@ -368,7 +369,9 @@ function startPagerDrag(dir) {
   previewEl.className = 'day-panel';
   previewEl.appendChild(buildDayContent(previewItems, previewDate, previewIdx));
 
-  const offset = dir === 'forward' ? width : -width;
+  // Offset by width + a fixed gap, so the gap stays constant (not growing or
+  // shrinking) as both panels travel together during the drag.
+  const offset = dir === 'forward' ? width + PAGE_GAP : -(width + PAGE_GAP);
   previewEl.style.transform = `translateX(${offset}px)`;
 
   listContainer.style.height = `${height}px`;
