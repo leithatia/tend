@@ -93,6 +93,34 @@ export async function deleteTaskCascade(taskId) {
   ]);
 }
 
+// Once a one-off task's date (or an exception/completion's date) is before
+// the current week, it's unreachable — the app only ever shows the current
+// week, so nothing older can be viewed or navigated to again. Sweeping it up
+// keeps the database from growing forever with dead rows.
+export async function pruneOldData(weekStartISO) {
+  const [tasks, exceptions, completions] = await Promise.all([
+    Tasks.getAll(),
+    Exceptions.getAll(),
+    Completions.getAll(),
+  ]);
+
+  const staleTaskIds = new Set(
+    tasks
+      .filter((t) => t.recurrence.type === 'once' && t.recurrence.date < weekStartISO)
+      .map((t) => t.id)
+  );
+
+  await Promise.all([
+    ...[...staleTaskIds].map((id) => Tasks.delete(id)),
+    ...exceptions
+      .filter((e) => e.date < weekStartISO || staleTaskIds.has(e.taskId))
+      .map((e) => Exceptions.delete(e.taskId, e.date)),
+    ...completions
+      .filter((c) => c.date < weekStartISO || staleTaskIds.has(c.taskId))
+      .map((c) => Completions.delete(c.taskId, c.date)),
+  ]);
+}
+
 export async function exportAll() {
   const [tasks, exceptions, completions] = await Promise.all([
     Tasks.getAll(),

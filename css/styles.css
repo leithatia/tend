@@ -659,10 +659,26 @@ input[type="text"]:focus, button:focus-visible {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   z-index: 80;
   max-width: 90vw;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .toast[hidden] {
+  display: none !important;
+}
+
+.toast-undo {
+  background: none;
+  border: none;
+  color: var(--text-tint-blue);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.toast-undo[hidden] {
   display: none !important;
 }
 

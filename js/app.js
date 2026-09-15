@@ -1,4 +1,4 @@
-import { Tasks, Exceptions, Completions, deleteTaskCascade } from './db.js';
+import { Tasks, Exceptions, Completions, deleteTaskCascade, pruneOldData } from './db.js';
 import { buildListForDate, groupByTimeOfDay } from './occurrences.js';
 import {
   todayISO, todayWeekdayIndex, getWeekDates, weekdayIndexForDate,
@@ -6,9 +6,9 @@ import {
 } from './date.js';
 import { emojiForCategory, tintForCategory } from './categories.js';
 import { ICONS } from './icons.js';
-import { initTaskForm, openTaskFormForAdd, openTaskFormForEdit } from './taskForm.js';
+import { initTaskForm, openTaskFormForAdd, openTaskFormForEdit, isTaskFormOpen } from './taskForm.js';
 import { initActionSheet, openActionSheet, openDeleteConfirmForItem } from './actionSheet.js';
-import { downloadExport, importFromFile } from './backup.js';
+import { downloadExport, importFromFile, getLastExportAt } from './backup.js';
 
 const appRoot = document.getElementById('app');
 const listContainer = document.getElementById('listContainer');
@@ -16,6 +16,8 @@ const dayHeading = document.getElementById('dayHeading');
 const dateSub = document.getElementById('dateSub');
 const dayStrip = document.getElementById('dayStrip');
 const toast = document.getElementById('toast');
+const toastMessage = document.getElementById('toastMessage');
+const toastUndoBtn = document.getElementById('toastUndoBtn');
 let toastTimer = null;
 
 let selectedWeekday = todayWeekdayIndex();
@@ -25,11 +27,19 @@ function dayPhrase(dateISO) {
   return dateISO === todayISO() ? 'today' : WEEKDAY_NAMES[weekdayIndexForDate(dateISO)];
 }
 
-function showToast(message) {
-  toast.textContent = message;
+function showToast(message, undoFn) {
+  toastMessage.textContent = message;
   toast.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+  toastUndoBtn.hidden = !undoFn;
+  toastUndoBtn.onclick = undoFn
+    ? () => {
+      clearTimeout(toastTimer);
+      toast.hidden = true;
+      undoFn();
+    }
+    : null;
+  toastTimer = setTimeout(() => { toast.hidden = true; }, undoFn ? 5000 : 2200);
 }
 
 const SECTION_META = {
@@ -484,14 +494,32 @@ addTaskFab.addEventListener('click', () => {
 initActionSheet({
   onEdit: startEdit,
   onDeleteOnce: async (item) => {
-    await Exceptions.put({ taskId: item.sourceTask.id, date: item.date, type: 'skip' });
+    const taskId = item.sourceTask.id;
+    const { date } = item;
+    await Exceptions.put({ taskId, date, type: 'skip' });
     await refresh();
-    showToast(`Removed for ${dayPhrase(item.date)}.`);
+    showToast(`Removed for ${dayPhrase(date)}.`, async () => {
+      await Exceptions.delete(taskId, date);
+      await refresh();
+    });
   },
   onDeleteAll: async (item) => {
-    await deleteTaskCascade(item.sourceTask.id);
+    const taskId = item.sourceTask.id;
+    const taskSnapshot = item.sourceTask;
+    const [exceptionsSnapshot, completionsSnapshot] = await Promise.all([
+      Exceptions.getForTask(taskId),
+      Completions.getForTask(taskId),
+    ]);
+    await deleteTaskCascade(taskId);
     await refresh();
-    showToast('Task deleted.');
+    showToast('Task deleted.', async () => {
+      await Tasks.put(taskSnapshot);
+      await Promise.all([
+        ...exceptionsSnapshot.map((e) => Exceptions.put(e)),
+        ...completionsSnapshot.map((c) => Completions.put(c)),
+      ]);
+      await refresh();
+    });
   },
 });
 
@@ -614,11 +642,42 @@ importFileInput.addEventListener('change', async () => {
   }
 });
 
+// Gently nag about backing up if it's been a while — export/import is the
+// only backup mechanism this app has, so silently losing the habit of doing
+// it means silently risking losing everything.
+const BACKUP_NUDGE_INTERVAL = 7 * 24 * 60 * 60 * 1000; // 7 days
+function maybeShowBackupNudge() {
+  if (cachedTasks.length === 0) return;
+  const now = Date.now();
+  let lastNudge = 0;
+  try {
+    lastNudge = Number(localStorage.getItem('dp_lastBackupNudgeAt') || 0);
+  } catch {
+    // ignore
+  }
+  if (now - getLastExportAt() < BACKUP_NUDGE_INTERVAL) return;
+  if (now - lastNudge < BACKUP_NUDGE_INTERVAL) return;
+  try {
+    localStorage.setItem('dp_lastBackupNudgeAt', String(now));
+  } catch {
+    // ignore
+  }
+  showToast("Haven't backed up in a while — tap ⋯ to export.");
+}
+
 // ---------- Boot ----------
 updateHeader();
 renderDayStrip();
 initTaskForm();
-refresh();
+refresh().then(() => {
+  maybeShowBackupNudge();
+  // Sweep up one-off tasks (and exceptions/completions) from before this
+  // week — the app can never navigate back to them, so they're just dead
+  // weight. Runs after the first render so it never delays showing today.
+  pruneOldData(getWeekDates()[0]).catch((err) => {
+    console.error('Prune failed:', err);
+  });
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -631,11 +690,19 @@ if ('serviceWorker' in navigator) {
 
   // When a new service worker takes over (e.g. after an app update ships),
   // reload once so the page is running the new cached assets instead of
-  // whatever was already loaded in memory.
+  // whatever was already loaded in memory. If the add/edit form is open,
+  // wait until it's closed so in-progress typing isn't lost.
   let reloadedForUpdate = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloadedForUpdate) return;
     reloadedForUpdate = true;
-    window.location.reload();
+    const tryReload = () => {
+      if (isTaskFormOpen()) {
+        setTimeout(tryReload, 1000);
+      } else {
+        window.location.reload();
+      }
+    };
+    tryReload();
   });
 }

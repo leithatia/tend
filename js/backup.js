@@ -1,5 +1,25 @@
 import { exportAll, importAll } from './db.js';
 
+const LAST_EXPORT_KEY = 'dp_lastExportAt';
+
+// localStorage can throw (private browsing, storage disabled) — this is a
+// convenience nudge, not core data, so failures here are silently ignored.
+export function getLastExportAt() {
+  try {
+    return Number(localStorage.getItem(LAST_EXPORT_KEY) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+function recordExportNow() {
+  try {
+    localStorage.setItem(LAST_EXPORT_KEY, String(Date.now()));
+  } catch {
+    // ignore
+  }
+}
+
 export async function downloadExport() {
   const data = await exportAll();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -11,6 +31,7 @@ export async function downloadExport() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  recordExportNow();
 }
 
 function readFileAsJSON(file) {

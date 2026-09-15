@@ -7,6 +7,10 @@ import {
 let els = {};
 let state = null;
 
+export function isTaskFormOpen() {
+  return !!els.overlay && !els.overlay.hidden;
+}
+
 export function initTaskForm() {
   els = {
     overlay: document.getElementById('taskFormOverlay'),
