@@ -185,13 +185,13 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .app-header h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
 }
 
 .app-header .date-sub {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -233,14 +233,14 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .day-strip-btn .dow {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-muted);
 }
 
 .day-strip-btn .dom {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1;
@@ -279,7 +279,7 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .section-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -362,8 +362,8 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .task-checkbox {
-  width: 22px;
-  height: 22px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
   border: 1.5px solid var(--text-muted);
   background: transparent;
@@ -375,8 +375,8 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .task-checkbox svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   opacity: 0;
 }
 
@@ -404,7 +404,7 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .task-name {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.3;
 }
 
@@ -414,12 +414,12 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .task-override-note {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
 .tag {
-  font-size: 11px;
+  font-size: 12px;
   padding: 3px 9px;
   border-radius: 10px;
   white-space: nowrap;
@@ -438,7 +438,7 @@ input[type="text"]:focus, button:focus-visible {
 .empty-state {
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 15px;
   padding: 60px 20px;
 }
 
@@ -513,13 +513,13 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .sheet-title-row p {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
   margin: 0;
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   display: block;
   margin-bottom: 8px;
@@ -541,7 +541,7 @@ input[type="text"]:focus, button:focus-visible {
 .picker-btn {
   flex: 1;
   padding: 8px 0;
-  font-size: 12px;
+  font-size: 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -568,7 +568,7 @@ input[type="text"]:focus, button:focus-visible {
 .quick-btn {
   flex: 1;
   padding: 6px 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .quick-btn.selected {
@@ -586,7 +586,7 @@ input[type="text"]:focus, button:focus-visible {
 .day-btn {
   flex: 1;
   padding: 8px 0;
-  font-size: 12px;
+  font-size: 13px;
   border-radius: 50%;
   aspect-ratio: 1;
 }
@@ -598,7 +598,7 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .day-summary {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   margin: 0 0 16px;
 }
@@ -608,7 +608,7 @@ input[type="text"]:focus, button:focus-visible {
   padding: 12px;
   background: var(--fill-accent);
   color: var(--on-accent);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   border-radius: var(--radius-sm);
   margin-bottom: 8px;
@@ -617,7 +617,7 @@ input[type="text"]:focus, button:focus-visible {
 .secondary-btn {
   width: 100%;
   padding: 10px;
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 8px;
 }
 
@@ -626,7 +626,7 @@ input[type="text"]:focus, button:focus-visible {
   padding: 10px;
   color: var(--text-danger);
   border-color: var(--border-danger);
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 8px;
 }
 
@@ -644,7 +644,7 @@ input[type="text"]:focus, button:focus-visible {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .row-btn svg {
@@ -653,7 +653,7 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .field-error {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-danger);
   margin: -10px 0 12px;
   display: none;
@@ -664,7 +664,7 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 .action-sheet-subtitle {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   margin: 0 0 14px;
 }
@@ -677,7 +677,7 @@ input[type="text"]:focus, button:focus-visible {
   background: var(--surface-3);
   border: 0.5px solid var(--border);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
   padding: 10px 16px;
   border-radius: 20px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
@@ -697,7 +697,7 @@ input[type="text"]:focus, button:focus-visible {
   border: none;
   color: var(--text-tint-blue);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   padding: 0;
   flex-shrink: 0;
 }
