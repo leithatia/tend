@@ -1,0 +1,97 @@
+<div style="background: var(--surface-1); border-radius: 12px; padding: 12px;">
+<div style="background: var(--surface-2); border-radius: 12px; border: 0.5px solid var(--border); padding: 1rem 1.25rem; max-width: 340px; margin: 0 auto;">
+
+<p style="font-size:18px; font-weight:500; margin:0 0 14px;">Add task</p>
+
+<label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Task name</label>
+<input type="text" placeholder="Evening stretch" style="width:100%; margin-bottom:16px;" />
+
+<label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:8px;">Time of day</label>
+<div style="display:flex; gap:6px; margin-bottom:16px;" id="timepicker">
+  <button data-time="morning" style="flex:1; padding:8px 0; font-size:12px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <i class="ti ti-sun-high" style="font-size:16px;" aria-hidden="true"></i>Morning
+  </button>
+  <button data-time="afternoon" style="flex:1; padding:8px 0; font-size:12px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <i class="ti ti-cloud" style="font-size:16px;" aria-hidden="true"></i>Afternoon
+  </button>
+  <button data-time="evening" style="flex:1; padding:8px 0; font-size:12px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <i class="ti ti-moon-stars" style="font-size:16px;" aria-hidden="true"></i>Evening
+  </button>
+</div>
+
+<label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:8px;">Repeats on</label>
+
+<div style="display:flex; gap:6px; margin-bottom:10px;">
+  <button data-quick="everyday" style="flex:1; padding:6px 0; font-size:12px;">Every day</button>
+  <button data-quick="weekdays" style="flex:1; padding:6px 0; font-size:12px;">Weekdays</button>
+  <button data-quick="once" style="flex:1; padding:6px 0; font-size:12px;">Just once</button>
+</div>
+
+<div style="display:flex; gap:4px; margin-bottom:16px;" id="daypicker">
+  <button data-day="0" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">M</button>
+  <button data-day="1" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">T</button>
+  <button data-day="2" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">W</button>
+  <button data-day="3" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">T</button>
+  <button data-day="4" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">F</button>
+  <button data-day="5" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">S</button>
+  <button data-day="6" style="flex:1; padding:8px 0; font-size:12px; border-radius:50%; aspect-ratio:1;">S</button>
+</div>
+
+<p id="summary" style="font-size:13px; color:var(--text-secondary); margin:0 0 16px;">Select which days this applies to.</p>
+
+<button style="width:100%; padding:10px; background:var(--fill-secondary); font-size:14px; font-weight:500;">Save task</button>
+
+</div>
+</div>
+<script>
+const timeBtns = ['morning','afternoon','evening'].map(t=>document.querySelector('[data-time="'+t+'"]'));
+let selectedTime = null;
+timeBtns.forEach(b=>{
+  b.addEventListener('click', ()=>{
+    selectedTime = b.getAttribute('data-time');
+    timeBtns.forEach(x=>{
+      const on = x===b;
+      x.style.background = on ? 'var(--fill-accent)' : '';
+      x.style.color = on ? 'var(--on-accent)' : '';
+      x.style.borderColor = on ? 'var(--border-accent)' : '';
+    });
+  });
+});
+
+const days = ['0','1','2','3','4','5','6'];
+const dayBtns = days.map(d => document.querySelector('[data-day="'+d+'"]'));
+const summary = document.getElementById('summary');
+let selected = new Set();
+
+function paint(){
+  dayBtns.forEach((b,i)=>{
+    const on = selected.has(days[i]);
+    b.style.background = on ? 'var(--fill-accent)' : '';
+    b.style.color = on ? 'var(--on-accent)' : '';
+    b.style.borderColor = on ? 'var(--border-accent)' : '';
+  });
+  if(selected.size===0){ summary.textContent='Select which days this applies to.'; return; }
+  if(selected.size===7){ summary.textContent='Repeats every day.'; return; }
+  const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const list = Array.from(selected).sort((a,b)=>a-b).map(i=>names[i]).join(', ');
+  summary.textContent = selected.size===1 ? 'Applies to '+list+' only.' : 'Repeats on '+list+'.';
+}
+
+dayBtns.forEach((b,i)=>{
+  b.addEventListener('click', ()=>{
+    const d = days[i];
+    if(selected.has(d)) selected.delete(d); else selected.add(d);
+    paint();
+  });
+});
+
+document.querySelector('[data-quick="everyday"]').addEventListener('click', ()=>{
+  selected = new Set(days); paint();
+});
+document.querySelector('[data-quick="weekdays"]').addEventListener('click', ()=>{
+  selected = new Set(['0','1','2','3','4']); paint();
+});
+document.querySelector('[data-quick="once"]').addEventListener('click', ()=>{
+  selected = new Set(['2']); paint();
+});
+</script>

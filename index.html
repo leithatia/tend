@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Daily Planner</title>
+<meta name="theme-color" content="#0b0d12" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div>
+      <h1>Today</h1>
+      <div class="date-sub" id="dateSub"></div>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Backup settings"></button>
+  </header>
+
+  <div id="listContainer"></div>
+</div>
+
+<button class="fab" id="addTaskFab" aria-label="Add task"></button>
+
+<!-- Add / edit task sheet -->
+<div class="overlay" id="taskFormOverlay" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title-row">
+      <p id="taskFormTitle">Add task</p>
+      <button class="icon-btn" id="taskFormClose" aria-label="Close"></button>
+    </div>
+
+    <label class="field-label" for="taskNameInput">Task name</label>
+    <input type="text" id="taskNameInput" placeholder="Evening stretch" style="width:100%; margin-bottom:4px;" />
+    <p class="field-error" id="taskNameError">Please enter a task name.</p>
+
+    <label class="field-label" for="taskCategoryInput" style="margin-top:12px;">Category</label>
+    <input type="text" id="taskCategoryInput" placeholder="pills, gym, meditation…" style="width:100%; margin-bottom:16px;" />
+
+    <label class="field-label">Time of day</label>
+    <div class="picker-row" id="timePicker">
+      <button type="button" class="picker-btn" data-time="morning"></button>
+      <button type="button" class="picker-btn" data-time="afternoon"></button>
+      <button type="button" class="picker-btn" data-time="evening"></button>
+    </div>
+    <p class="field-error" id="taskTimeError">Please choose a time of day.</p>
+
+    <label class="field-label">Repeats on</label>
+    <div class="quick-row" id="quickPicker">
+      <button type="button" class="quick-btn" data-quick="everyday">Every day</button>
+      <button type="button" class="quick-btn" data-quick="weekdays">Weekdays</button>
+      <button type="button" class="quick-btn" data-quick="once">Just once</button>
+    </div>
+    <div class="day-picker" id="dayPicker"></div>
+    <p class="day-summary" id="daySummary">Select which days this applies to.</p>
+
+    <button class="primary-btn" id="taskFormSave">Save task</button>
+    <button class="secondary-btn" id="taskFormCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- Edit scope: apply change to just today or whole series -->
+<div class="overlay" id="editScopeOverlay" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p style="font-size:15px;font-weight:500;margin:0 0 4px;">Save changes</p>
+    <p class="action-sheet-subtitle" id="editScopeSubtitle"></p>
+    <button class="secondary-btn" id="editScopeOnce">Just today</button>
+    <button class="primary-btn" id="editScopeAll">Change whole series</button>
+    <button class="secondary-btn" id="editScopeCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- Action sheet: tap a task -->
+<div class="overlay" id="actionSheetOverlay" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p id="actionSheetTitle" style="font-size:15px;font-weight:500;margin:0 0 2px;"></p>
+    <p class="action-sheet-subtitle" id="actionSheetSubtitle"></p>
+    <button class="row-btn" id="actionEditBtn"></button>
+    <button class="row-btn danger-btn" id="actionDeleteBtn"></button>
+    <button class="secondary-btn" id="actionCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="overlay" id="deleteConfirmOverlay" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p id="deleteConfirmTitle" style="font-size:14px;margin:0 0 4px;"></p>
+    <p class="action-sheet-subtitle" id="deleteConfirmSubtitle">What do you want to remove?</p>
+    <button class="secondary-btn" id="deleteOnceBtn">Just today</button>
+    <button class="danger-btn solid" id="deleteAllBtn">Remove from all days</button>
+    <button class="secondary-btn" id="deleteCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- Backup / settings -->
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title-row">
+      <p>Backup</p>
+      <button class="icon-btn" id="settingsClose" aria-label="Close"></button>
+    </div>
+    <button class="row-btn" id="exportBtn"></button>
+    <button class="row-btn" id="importBtn"></button>
+    <input type="file" accept="application/json" id="importFileInput" class="file-input" />
+    <p class="action-sheet-subtitle" style="margin-top:4px;">Importing replaces all data currently stored on this device.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

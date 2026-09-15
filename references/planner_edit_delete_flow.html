@@ -1,0 +1,67 @@
+<div style="background: var(--surface-1); border-radius: 12px; padding: 12px;">
+<div style="max-width: 340px; margin: 0 auto; display:flex; flex-direction:column; gap:16px;">
+
+<div>
+<p style="font-size:12px; color:var(--text-muted); margin:0 0 6px; text-align:center;">Tap a task</p>
+<div style="background: var(--surface-2); border-radius: 12px; border: 0.5px solid var(--border); padding: 0.75rem 1rem; display:flex; align-items:center; gap:10px;">
+  <input type="checkbox" style="width:18px; height:18px;" />
+  <span style="font-size:14px; flex:1;">Gym — push day</span>
+  <span style="font-size:11px; background:var(--bg-tint-blue); color:var(--text-tint-blue); padding:2px 8px; border-radius:10px;">training</span>
+</div>
+</div>
+
+<div id="actionsheet" style="background: var(--surface-2); border-radius: 12px; border: 0.5px solid var(--border); padding: 1rem 1.25rem;">
+  <p style="font-size:15px; font-weight:500; margin:0 0 2px;">Gym — push day</p>
+  <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px;">Morning · Repeats Mon, Wed, Fri</p>
+
+  <button id="editBtn" style="width:100%; padding:10px; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+    <i class="ti ti-edit" style="font-size:16px;" aria-hidden="true"></i>
+    <span style="font-size:14px;">Edit task</span>
+  </button>
+  <button id="deleteBtn" style="width:100%; padding:10px; display:flex; align-items:center; gap:8px; color:var(--text-danger); border-color:var(--border-danger);">
+    <i class="ti ti-trash" style="font-size:16px;" aria-hidden="true"></i>
+    <span style="font-size:14px;">Delete task</span>
+  </button>
+</div>
+
+<div id="deleteConfirm" style="display:none; background: var(--surface-2); border-radius: 12px; border: 0.5px solid var(--border-danger); padding: 1rem 1.25rem;">
+  <p style="font-size:14px; margin:0 0 4px;">This task repeats on Mon, Wed, Fri.</p>
+  <p style="font-size:13px; color:var(--text-secondary); margin:0 0 14px;">What do you want to remove?</p>
+
+  <button id="delOne" style="width:100%; padding:10px; margin-bottom:8px; font-size:14px;">Just today (Fri)</button>
+  <button id="delAll" style="width:100%; padding:10px; margin-bottom:8px; background:var(--fill-danger); color:var(--on-danger); font-size:14px; font-weight:500;">Remove from all days</button>
+  <button id="delCancel" style="width:100%; padding:10px; font-size:14px;">Cancel</button>
+</div>
+
+<div id="doneMsg" style="display:none; text-align:center; font-size:13px; color:var(--text-secondary);"></div>
+
+</div>
+</div>
+<script>
+const sheet = document.getElementById('actionsheet');
+const confirm = document.getElementById('deleteConfirm');
+const done = document.getElementById('doneMsg');
+
+document.getElementById('deleteBtn').addEventListener('click', ()=>{
+  sheet.style.display='none';
+  confirm.style.display='block';
+});
+document.getElementById('delCancel').addEventListener('click', ()=>{
+  confirm.style.display='none';
+  sheet.style.display='block';
+});
+document.getElementById('delOne').addEventListener('click', ()=>{
+  confirm.style.display='none';
+  done.style.display='block';
+  done.textContent = 'Removed from Friday only — still active Mon and Wed.';
+});
+document.getElementById('delAll').addEventListener('click', ()=>{
+  confirm.style.display='none';
+  done.style.display='block';
+  done.textContent = 'Removed from all days.';
+});
+document.getElementById('editBtn').addEventListener('click', ()=>{
+  done.style.display='block';
+  done.textContent = 'Would open the add-task sheet, pre-filled, in edit mode.';
+});
+</script>
