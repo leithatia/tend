@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-planner-v10';
+const CACHE_NAME = 'daily-planner-v11';
 
 const APP_SHELL = [
   './',
@@ -22,7 +22,18 @@ const APP_SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then((cache) => Promise.all(
+        // cache.addAll() lets fetch() serve stale responses from the
+        // browser's own HTTP cache, which can mix an old file in with an
+        // otherwise-new set (e.g. a stale taskForm.js next to a new app.js
+        // that expects an export it doesn't have yet) and break the app
+        // outright. { cache: 'reload' } forces every file to come from the
+        // network so the whole app shell is internally consistent.
+        APP_SHELL.map((url) => fetch(url, { cache: 'reload' }).then((response) => {
+          if (response.ok) return cache.put(url, response);
+          return undefined;
+        }))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -42,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
 
-      return fetch(event.request)
+      return fetch(event.request, { cache: 'reload' })
         .then((response) => {
           if (response.ok && response.type === 'basic') {
             const clone = response.clone();
