@@ -130,14 +130,27 @@ input[type="text"]:focus, button:focus-visible {
 }
 
 #listContainer {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
   transition: transform 150ms ease, opacity 150ms ease;
 }
 
+/* Tap-to-jump on the day strip (no finger to track) still gets a simple crossfade */
 #listContainer.slide-out-left { transform: translateX(-16px); opacity: 0; }
 #listContainer.slide-out-right { transform: translateX(16px); opacity: 0; }
 #listContainer.slide-in-left { transform: translateX(-16px); opacity: 0; }
 #listContainer.slide-in-right { transform: translateX(16px); opacity: 0; }
 #listContainer.no-anim { transition: none !important; }
+
+/* Live swipe drag: current + preview day panels slide together 1:1 with the finger */
+.day-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: none;
+}
 
 /* ---------- Header ---------- */
 .app-header {

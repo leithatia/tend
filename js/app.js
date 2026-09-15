@@ -38,13 +38,28 @@ const SECTION_META = {
   evening: { label: 'Evening', icon: ICONS.moon },
 };
 
-async function refresh(direction) {
-  const [tasks, exceptions, completions] = await Promise.all([
+// Tasks/exceptions/completions are cached in memory so the live swipe drag
+// can synchronously build a preview of an adjacent day without hitting
+// IndexedDB on every touchmove frame.
+let cachedTasks = [];
+let cachedExceptions = [];
+let cachedCompletions = [];
+
+async function loadData() {
+  [cachedTasks, cachedExceptions, cachedCompletions] = await Promise.all([
     Tasks.getAll(),
     Exceptions.getAll(),
     Completions.getAll(),
   ]);
-  const items = buildListForDate(tasks, exceptions, completions, selectedDate, selectedWeekday);
+}
+
+function itemsForDate(dateISO, weekdayIdx) {
+  return buildListForDate(cachedTasks, cachedExceptions, cachedCompletions, dateISO, weekdayIdx);
+}
+
+async function refresh(direction) {
+  await loadData();
+  const items = itemsForDate(selectedDate, selectedWeekday);
   if (direction) {
     animateSwap(items, direction);
   } else {
@@ -83,22 +98,24 @@ function animateSwap(items, direction) {
 // one is currently open. Reset whenever the list is rebuilt.
 let closeOpenRow = null;
 
-function render(items) {
-  const groups = groupByTimeOfDay(items);
-  listContainer.innerHTML = '';
-  closeOpenRow = null;
+// Builds the task-list markup for a given day into a fragment, independent
+// of whichever container it ends up in — used both for the real listContainer
+// and for the transient preview panel during a swipe drag.
+function buildDayContent(items, dateISO, weekdayIdx) {
+  const frag = document.createDocumentFragment();
 
   if (items.length === 0) {
-    const isToday = selectedDate === todayISO();
+    const isToday = dateISO === todayISO();
     const empty = document.createElement('div');
     empty.className = 'empty-state';
     empty.textContent = isToday
       ? 'Nothing on the list for today. Tap + to add a task.'
-      : `Nothing on ${WEEKDAY_NAMES[selectedWeekday]}'s list. Tap + to add a task.`;
-    listContainer.appendChild(empty);
-    return;
+      : `Nothing on ${WEEKDAY_NAMES[weekdayIdx]}'s list. Tap + to add a task.`;
+    frag.appendChild(empty);
+    return frag;
   }
 
+  const groups = groupByTimeOfDay(items);
   for (const key of ['morning', 'afternoon', 'evening']) {
     const groupItems = groups[key];
     if (groupItems.length === 0) continue;
@@ -116,8 +133,15 @@ function render(items) {
     groupItems.forEach((item) => list.appendChild(renderTaskRow(item)));
     section.appendChild(list);
 
-    listContainer.appendChild(section);
+    frag.appendChild(section);
   }
+  return frag;
+}
+
+function render(items) {
+  listContainer.innerHTML = '';
+  closeOpenRow = null;
+  listContainer.appendChild(buildDayContent(items, selectedDate, selectedWeekday));
 }
 
 const ROW_REVEAL = 128; // two 64px action buttons
@@ -316,29 +340,121 @@ function selectDay(idx) {
   refresh(direction);
 }
 
-// Swipe left/right over the day strip or the page background to move to the
-// next/previous day, clamped to the current week. Swipes starting on a task
-// row are left alone — those belong to the row's own swipe-to-reveal actions.
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartOnRow = false;
+// ---------- Live swipe-driven day pager ----------
+// Dragging over the day strip or the page background (not a task row) tracks
+// the finger 1:1: the current day's panel slides out while the
+// next/previous day's panel slides in right behind your finger, like a page
+// being turned. Releasing past ~35% of the width commits the day change;
+// releasing short of that snaps back. Clamped to the current week.
+let pager = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragMode = null; // null | 'row' | 'pager' | 'blocked'
+
+function startPagerDrag(dir) {
+  const previewIdx = selectedWeekday + (dir === 'forward' ? 1 : -1);
+  if (previewIdx < 0 || previewIdx > 6) return null;
+
+  const width = listContainer.clientWidth;
+  const height = listContainer.getBoundingClientRect().height;
+  const previewDate = getWeekDates()[previewIdx];
+  const previewItems = itemsForDate(previewDate, previewIdx);
+
+  const currentEl = document.createElement('div');
+  currentEl.className = 'day-panel';
+  currentEl.innerHTML = listContainer.innerHTML;
+
+  const previewEl = document.createElement('div');
+  previewEl.className = 'day-panel';
+  previewEl.appendChild(buildDayContent(previewItems, previewDate, previewIdx));
+
+  const offset = dir === 'forward' ? width : -width;
+  previewEl.style.transform = `translateX(${offset}px)`;
+
+  listContainer.style.height = `${height}px`;
+  listContainer.innerHTML = '';
+  listContainer.appendChild(currentEl);
+  listContainer.appendChild(previewEl);
+
+  return {
+    dir, previewIdx, previewDate, previewItems, width, offset, currentEl, previewEl, lastDx: 0,
+  };
+}
+
+function updatePagerDrag(dx) {
+  const clamped = Math.max(-pager.width, Math.min(pager.width, dx));
+  pager.currentEl.style.transform = `translateX(${clamped}px)`;
+  pager.previewEl.style.transform = `translateX(${pager.offset + clamped}px)`;
+  pager.lastDx = clamped;
+}
+
+function settlePagerDrag(commit) {
+  const { currentEl, previewEl, width, offset } = pager;
+  let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    currentEl.removeEventListener('transitionend', finish);
+    clearTimeout(fallback);
+    if (commit) {
+      selectedWeekday = pager.previewIdx;
+      selectedDate = pager.previewDate;
+      updateHeader();
+      renderDayStrip();
+      render(pager.previewItems);
+    } else {
+      render(itemsForDate(selectedDate, selectedWeekday));
+    }
+    listContainer.style.height = '';
+    pager = null;
+  }
+
+  const fallback = setTimeout(finish, 220);
+  currentEl.addEventListener('transitionend', finish, { once: true });
+  currentEl.style.transition = 'transform 160ms ease';
+  previewEl.style.transition = 'transform 160ms ease';
+
+  if (commit) {
+    currentEl.style.transform = `translateX(${offset > 0 ? -width : width}px)`;
+    previewEl.style.transform = 'translateX(0)';
+  } else {
+    currentEl.style.transform = 'translateX(0)';
+    previewEl.style.transform = `translateX(${offset}px)`;
+  }
+}
+
 appRoot.addEventListener('touchstart', (e) => {
+  dragMode = e.target.closest('.task-row-wrap') ? 'row' : null;
   const t = e.changedTouches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-  touchStartOnRow = !!e.target.closest('.task-row-wrap');
+  dragStartX = t.clientX;
+  dragStartY = t.clientY;
 }, { passive: true });
 
-appRoot.addEventListener('touchend', (e) => {
-  if (touchStartOnRow) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-  const next = selectedWeekday + (dx < 0 ? 1 : -1);
-  if (next < 0 || next > 6) return;
-  selectDay(next);
+appRoot.addEventListener('touchmove', (e) => {
+  if (dragMode === 'row' || dragMode === 'blocked') return;
+  const t = e.touches[0];
+  const dx = t.clientX - dragStartX;
+  const dy = t.clientY - dragStartY;
+
+  if (dragMode === null) {
+    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+    pager = startPagerDrag(dx < 0 ? 'forward' : 'backward');
+    dragMode = pager ? 'pager' : 'blocked';
+    if (!pager) return;
+  }
+
+  updatePagerDrag(dx);
 }, { passive: true });
+
+function endPagerDrag() {
+  if (dragMode === 'pager' && pager) {
+    settlePagerDrag(Math.abs(pager.lastDx) > pager.width * 0.35);
+  }
+  dragMode = null;
+}
+appRoot.addEventListener('touchend', endPagerDrag, { passive: true });
+appRoot.addEventListener('touchcancel', endPagerDrag, { passive: true });
 
 // ---------- Add task ----------
 const addTaskFab = document.getElementById('addTaskFab');
