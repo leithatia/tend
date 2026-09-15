@@ -1,39 +1,45 @@
 :root {
   color-scheme: dark;
 
-  --bg: #0b0d12;
-  --surface-1: #12151c;
-  --surface-2: #1a1e27;
-  --surface-3: #232836;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-accent: #5b6cff;
-  --border-danger: rgba(240, 90, 90, 0.5);
+  --bg: #16110c;
+  --surface-1: #1d1712;
+  --surface-2: #251e16;
+  --surface-3: #2f261b;
+  --border: rgba(255, 240, 220, 0.08);
+  --border-accent: #c1683f;
+  --border-danger: rgba(200, 90, 70, 0.5);
 
-  --text-primary: #f2f3f7;
-  --text-secondary: #a2a8ba;
-  --text-muted: #6b7182;
-  --text-danger: #ff8080;
-  --on-accent: #ffffff;
-  --on-danger: #ffffff;
+  --text-primary: #f5ece0;
+  --text-secondary: #b7a893;
+  --text-muted: #8a7a67;
+  --text-danger: #ff9478;
+  --on-accent: #fff8f0;
+  --on-danger: #fff8f0;
 
-  --fill-accent: #5b6cff;
-  --fill-secondary: #2a2f3d;
-  --fill-danger: #d84a4a;
+  --fill-accent: #c1683f;
+  --fill-secondary: #3a2f22;
+  --fill-danger: #b8453a;
 
-  --bg-tint-blue: rgba(91, 140, 255, 0.16);
-  --text-tint-blue: #8fb4ff;
-  --bg-tint-purple: rgba(160, 110, 255, 0.16);
-  --text-tint-purple: #c3a4ff;
-  --bg-tint-green: rgba(80, 200, 140, 0.16);
-  --text-tint-green: #7fe0b6;
-  --bg-tint-orange: rgba(255, 160, 70, 0.16);
-  --text-tint-orange: #ffbd80;
-  --bg-tint-pink: rgba(255, 110, 160, 0.16);
-  --text-tint-pink: #ff9dc0;
-  --bg-tint-gray: rgba(160, 170, 190, 0.16);
-  --text-tint-gray: #b7bdcc;
+  /* Sage */
+  --bg-tint-blue: rgba(146, 168, 110, 0.18);
+  --text-tint-blue: #b7d18f;
+  /* Dusty mauve */
+  --bg-tint-purple: rgba(160, 105, 115, 0.18);
+  --text-tint-purple: #dba9b3;
+  /* Olive */
+  --bg-tint-green: rgba(150, 155, 80, 0.18);
+  --text-tint-green: #c7cd8e;
+  /* Amber */
+  --bg-tint-orange: rgba(213, 155, 60, 0.2);
+  --text-tint-orange: #f0c279;
+  /* Terracotta */
+  --bg-tint-pink: rgba(196, 114, 78, 0.2);
+  --text-tint-pink: #eaab88;
+  /* Warm stone */
+  --bg-tint-gray: rgba(163, 146, 122, 0.18);
+  --text-tint-gray: #cabda5;
 
-  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.35);
+  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.4);
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -42,35 +48,41 @@
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
-    --bg: #f4f5f8;
-    --surface-1: #ffffff;
-    --surface-2: #ffffff;
-    --surface-3: #f0f1f5;
-    --border: rgba(20, 22, 30, 0.08);
-    --border-accent: #4a5aef;
-    --border-danger: rgba(200, 60, 60, 0.4);
+    --bg: #f7f1e6;
+    --surface-1: #fffaf2;
+    --surface-2: #fffaf2;
+    --surface-3: #efe3cf;
+    --border: rgba(60, 40, 20, 0.1);
+    --border-accent: #a8542f;
+    --border-danger: rgba(170, 60, 45, 0.4);
 
-    --text-primary: #1a1d27;
-    --text-secondary: #5a5f70;
-    --text-muted: #8a8fa0;
-    --text-danger: #c23a3a;
+    --text-primary: #2b2015;
+    --text-secondary: #6b5a45;
+    --text-muted: #948269;
+    --text-danger: #a3392b;
 
-    --fill-accent: #4a5aef;
-    --fill-secondary: #eceef4;
-    --fill-danger: #d84a4a;
+    --fill-accent: #a8542f;
+    --fill-secondary: #ece0c9;
+    --fill-danger: #a3392b;
 
-    --bg-tint-blue: rgba(74, 110, 235, 0.1);
-    --text-tint-blue: #3a54c8;
-    --bg-tint-purple: rgba(140, 90, 235, 0.1);
-    --text-tint-purple: #7c4fd6;
-    --bg-tint-green: rgba(40, 160, 110, 0.12);
-    --text-tint-green: #1f8f63;
-    --bg-tint-orange: rgba(230, 130, 40, 0.12);
-    --text-tint-orange: #b8650f;
-    --bg-tint-pink: rgba(230, 80, 140, 0.12);
-    --text-tint-pink: #c23a72;
-    --bg-tint-gray: rgba(90, 95, 112, 0.1);
-    --text-tint-gray: #565b6c;
+    /* Sage */
+    --bg-tint-blue: rgba(112, 142, 78, 0.14);
+    --text-tint-blue: #52672e;
+    /* Dusty mauve */
+    --bg-tint-purple: rgba(150, 88, 98, 0.14);
+    --text-tint-purple: #834552;
+    /* Olive */
+    --bg-tint-green: rgba(140, 140, 66, 0.16);
+    --text-tint-green: #66661f;
+    /* Amber */
+    --bg-tint-orange: rgba(198, 138, 35, 0.18);
+    --text-tint-orange: #855c0d;
+    /* Terracotta */
+    --bg-tint-pink: rgba(178, 98, 66, 0.16);
+    --text-tint-pink: #874626;
+    /* Warm stone */
+    --bg-tint-gray: rgba(138, 116, 90, 0.16);
+    --text-tint-gray: #6b5a45;
 
     --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.12);
   }
