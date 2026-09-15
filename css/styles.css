@@ -1,55 +1,59 @@
 /*
  * Palette pulled from a minimalist illustration: a small island with a
  * house and tree split across a cream field and a deep forest-green field,
- * reflected in still water. Rather than literally splitting the screen,
- * the two hero colors trade places as background/accent between themes —
- * dark mode is the green field with the house's cream picked out as the
- * accent; light mode is the cream field with the forest green picked out
- * instead. Everything else (water teal, foliage sage, boat-wood terracotta,
- * stone, dusk plum/rose) supports as the category tag palette.
+ * reflected in still water. The page background stays the deep green field
+ * in both themes' "dark" state, but the cards floating on it borrow the
+ * light theme's cream-surface / dark-green-text / green-accent system
+ * wholesale — like the pale house standing out against the green. Only
+ * text sitting directly on the green field itself (the heading, day labels,
+ * empty state) uses the separate --onbg-* cream tones instead.
  */
 :root {
   color-scheme: dark;
 
   --bg: #0f1a13;
-  --surface-1: #16221a;
-  --surface-2: #1c2b21;
-  --surface-3: #253629;
-  --border: rgba(240, 235, 220, 0.08);
-  --border-accent: #ede3cc;
-  --border-danger: rgba(200, 90, 70, 0.5);
+  --onbg-primary: #f2ecdc;
+  --onbg-secondary: #a8b8a4;
+  --onbg-muted: #6f8070;
 
-  --text-primary: #f2ecdc;
-  --text-secondary: #a8b8a4;
-  --text-muted: #6f8070;
-  --text-danger: #ff9478;
-  --on-accent: #16241a;
-  --on-danger: #fff6e8;
+  --surface-1: #faf6ec;
+  --surface-2: #faf6ec;
+  --surface-3: #ece0c4;
+  --border: rgba(30, 45, 30, 0.1);
+  --border-accent: #245c3a;
+  --border-danger: rgba(160, 55, 40, 0.4);
 
-  --fill-accent: #ede3cc;
-  --fill-secondary: #2a3a2d;
-  --fill-danger: #b8453a;
+  --text-primary: #23301f;
+  --text-secondary: #5f6b52;
+  --text-muted: #8b8570;
+  --text-danger: #a3392b;
+  --on-accent: #f3ecda;
+  --on-danger: #f7f0e0;
+
+  --fill-accent: #245c3a;
+  --fill-secondary: #ece0c4;
+  --fill-danger: #a3392b;
 
   /* Sage (foliage) */
-  --bg-tint-blue: rgba(140, 170, 110, 0.18);
-  --text-tint-blue: #b9d69a;
+  --bg-tint-blue: rgba(110, 150, 80, 0.16);
+  --text-tint-blue: #4c6b34;
   /* Dusk plum */
-  --bg-tint-purple: rgba(120, 85, 95, 0.2);
-  --text-tint-purple: #d2a0ac;
+  --bg-tint-purple: rgba(110, 75, 85, 0.16);
+  --text-tint-purple: #6b4652;
   /* Water teal */
-  --bg-tint-green: rgba(70, 140, 130, 0.2);
-  --text-tint-green: #82d1c4;
+  --bg-tint-green: rgba(60, 130, 120, 0.16);
+  --text-tint-green: #276358;
   /* Boat-wood terracotta */
-  --bg-tint-orange: rgba(196, 120, 70, 0.2);
-  --text-tint-orange: #eab488;
+  --bg-tint-orange: rgba(180, 105, 55, 0.16);
+  --text-tint-orange: #8a4d1e;
   /* Warm rose */
-  --bg-tint-pink: rgba(185, 105, 95, 0.18);
-  --text-tint-pink: #e3a89a;
+  --bg-tint-pink: rgba(170, 90, 80, 0.16);
+  --text-tint-pink: #8a4436;
   /* House stone */
-  --bg-tint-gray: rgba(165, 150, 120, 0.16);
-  --text-tint-gray: #d1c4a4;
+  --bg-tint-gray: rgba(140, 125, 95, 0.16);
+  --text-tint-gray: #6b5c40;
 
-  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.4);
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -59,6 +63,10 @@
   :root {
     color-scheme: light;
     --bg: #f3ecda;
+    --onbg-primary: #23301f;
+    --onbg-secondary: #5f6b52;
+    --onbg-muted: #8b8570;
+
     --surface-1: #faf6ec;
     --surface-2: #faf6ec;
     --surface-3: #ece0c4;
@@ -188,11 +196,12 @@ input[type="text"]:focus, button:focus-visible {
   font-size: 25px;
   font-weight: 600;
   margin: 0;
+  color: var(--onbg-primary);
 }
 
 .app-header .date-sub {
   font-size: 15px;
-  color: var(--text-secondary);
+  color: var(--onbg-secondary);
   margin-top: 2px;
 }
 
@@ -283,7 +292,7 @@ input[type="text"]:focus, button:focus-visible {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--onbg-muted);
   margin: 0 0 8px 4px;
   display: flex;
   align-items: center;
@@ -437,7 +446,7 @@ input[type="text"]:focus, button:focus-visible {
 /* ---------- Empty state ---------- */
 .empty-state {
   text-align: center;
-  color: var(--text-muted);
+  color: var(--onbg-muted);
   font-size: 15px;
   padding: 60px 20px;
 }
