@@ -1,45 +1,55 @@
+/*
+ * Palette pulled from a minimalist illustration: a small island with a
+ * house and tree split across a cream field and a deep forest-green field,
+ * reflected in still water. Rather than literally splitting the screen,
+ * the two hero colors trade places as background/accent between themes —
+ * dark mode is the green field with the house's cream picked out as the
+ * accent; light mode is the cream field with the forest green picked out
+ * instead. Everything else (water teal, foliage sage, boat-wood terracotta,
+ * stone, dusk plum/rose) supports as the category tag palette.
+ */
 :root {
   color-scheme: dark;
 
-  --bg: #16110c;
-  --surface-1: #1d1712;
-  --surface-2: #251e16;
-  --surface-3: #2f261b;
-  --border: rgba(255, 240, 220, 0.08);
-  --border-accent: #c1683f;
+  --bg: #0f1a13;
+  --surface-1: #16221a;
+  --surface-2: #1c2b21;
+  --surface-3: #253629;
+  --border: rgba(240, 235, 220, 0.08);
+  --border-accent: #ede3cc;
   --border-danger: rgba(200, 90, 70, 0.5);
 
-  --text-primary: #f5ece0;
-  --text-secondary: #b7a893;
-  --text-muted: #8a7a67;
+  --text-primary: #f2ecdc;
+  --text-secondary: #a8b8a4;
+  --text-muted: #6f8070;
   --text-danger: #ff9478;
-  --on-accent: #fff8f0;
-  --on-danger: #fff8f0;
+  --on-accent: #16241a;
+  --on-danger: #fff6e8;
 
-  --fill-accent: #c1683f;
-  --fill-secondary: #3a2f22;
+  --fill-accent: #ede3cc;
+  --fill-secondary: #2a3a2d;
   --fill-danger: #b8453a;
 
-  /* Sage */
-  --bg-tint-blue: rgba(146, 168, 110, 0.18);
-  --text-tint-blue: #b7d18f;
-  /* Dusty mauve */
-  --bg-tint-purple: rgba(160, 105, 115, 0.18);
-  --text-tint-purple: #dba9b3;
-  /* Olive */
-  --bg-tint-green: rgba(150, 155, 80, 0.18);
-  --text-tint-green: #c7cd8e;
-  /* Amber */
-  --bg-tint-orange: rgba(213, 155, 60, 0.2);
-  --text-tint-orange: #f0c279;
-  /* Terracotta */
-  --bg-tint-pink: rgba(196, 114, 78, 0.2);
-  --text-tint-pink: #eaab88;
-  /* Warm stone */
-  --bg-tint-gray: rgba(163, 146, 122, 0.18);
-  --text-tint-gray: #cabda5;
+  /* Sage (foliage) */
+  --bg-tint-blue: rgba(140, 170, 110, 0.18);
+  --text-tint-blue: #b9d69a;
+  /* Dusk plum */
+  --bg-tint-purple: rgba(120, 85, 95, 0.2);
+  --text-tint-purple: #d2a0ac;
+  /* Water teal */
+  --bg-tint-green: rgba(70, 140, 130, 0.2);
+  --text-tint-green: #82d1c4;
+  /* Boat-wood terracotta */
+  --bg-tint-orange: rgba(196, 120, 70, 0.2);
+  --text-tint-orange: #eab488;
+  /* Warm rose */
+  --bg-tint-pink: rgba(185, 105, 95, 0.18);
+  --text-tint-pink: #e3a89a;
+  /* House stone */
+  --bg-tint-gray: rgba(165, 150, 120, 0.16);
+  --text-tint-gray: #d1c4a4;
 
-  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.45);
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -48,41 +58,43 @@
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
-    --bg: #f7f1e6;
-    --surface-1: #fffaf2;
-    --surface-2: #fffaf2;
-    --surface-3: #efe3cf;
-    --border: rgba(60, 40, 20, 0.1);
-    --border-accent: #a8542f;
-    --border-danger: rgba(170, 60, 45, 0.4);
+    --bg: #f3ecda;
+    --surface-1: #faf6ec;
+    --surface-2: #faf6ec;
+    --surface-3: #ece0c4;
+    --border: rgba(30, 45, 30, 0.1);
+    --border-accent: #245c3a;
+    --border-danger: rgba(160, 55, 40, 0.4);
 
-    --text-primary: #2b2015;
-    --text-secondary: #6b5a45;
-    --text-muted: #948269;
+    --text-primary: #23301f;
+    --text-secondary: #5f6b52;
+    --text-muted: #8b8570;
     --text-danger: #a3392b;
 
-    --fill-accent: #a8542f;
-    --fill-secondary: #ece0c9;
+    --fill-accent: #245c3a;
+    --fill-secondary: #ece0c4;
     --fill-danger: #a3392b;
+    --on-accent: #f3ecda;
+    --on-danger: #f7f0e0;
 
-    /* Sage */
-    --bg-tint-blue: rgba(112, 142, 78, 0.14);
-    --text-tint-blue: #52672e;
-    /* Dusty mauve */
-    --bg-tint-purple: rgba(150, 88, 98, 0.14);
-    --text-tint-purple: #834552;
-    /* Olive */
-    --bg-tint-green: rgba(140, 140, 66, 0.16);
-    --text-tint-green: #66661f;
-    /* Amber */
-    --bg-tint-orange: rgba(198, 138, 35, 0.18);
-    --text-tint-orange: #855c0d;
-    /* Terracotta */
-    --bg-tint-pink: rgba(178, 98, 66, 0.16);
-    --text-tint-pink: #874626;
-    /* Warm stone */
-    --bg-tint-gray: rgba(138, 116, 90, 0.16);
-    --text-tint-gray: #6b5a45;
+    /* Sage (foliage) */
+    --bg-tint-blue: rgba(110, 150, 80, 0.16);
+    --text-tint-blue: #4c6b34;
+    /* Dusk plum */
+    --bg-tint-purple: rgba(110, 75, 85, 0.16);
+    --text-tint-purple: #6b4652;
+    /* Water teal */
+    --bg-tint-green: rgba(60, 130, 120, 0.16);
+    --text-tint-green: #276358;
+    /* Boat-wood terracotta */
+    --bg-tint-orange: rgba(180, 105, 55, 0.16);
+    --text-tint-orange: #8a4d1e;
+    /* Warm rose */
+    --bg-tint-pink: rgba(170, 90, 80, 0.16);
+    --text-tint-pink: #8a4436;
+    /* House stone */
+    --bg-tint-gray: rgba(140, 125, 95, 0.16);
+    --text-tint-gray: #6b5c40;
 
     --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.12);
   }
