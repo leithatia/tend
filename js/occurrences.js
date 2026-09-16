@@ -29,8 +29,17 @@ export function buildListForDate(tasks, exceptions, completions, date, weekday) 
     });
   }
 
-  const order = { morning: 0, afternoon: 1, evening: 2 };
-  items.sort((a, b) => order[a.task.timeOfDay] - order[b.task.timeOfDay]);
+  const bucketOrder = { morning: 0, afternoon: 1, evening: 2 };
+  items.sort((a, b) => {
+    const bucketDiff = bucketOrder[a.task.timeOfDay] - bucketOrder[b.task.timeOfDay];
+    if (bucketDiff !== 0) return bucketDiff;
+    // Manually reordered tasks carry an explicit `order`; anything from
+    // before that feature (or never touched since) falls back to creation
+    // order so it doesn't jump around once a sibling gets a real value.
+    const a0 = a.task.order ?? a.task.createdAt ?? 0;
+    const b0 = b.task.order ?? b.task.createdAt ?? 0;
+    return a0 - b0;
+  });
   return items;
 }
 

@@ -326,6 +326,32 @@ input[type="text"]:focus, button:focus-visible {
   margin-bottom: 22px;
 }
 
+/* A time-of-day section with nothing in it stays invisible during normal
+ * browsing, but becomes a visible drop target while a long-press reorder
+ * drag is in progress (see #listContainer.reordering below). */
+.section.section-empty {
+  display: none;
+}
+
+#listContainer.reordering .section.section-empty {
+  display: block;
+}
+
+.drop-placeholder {
+  border: 1.5px dashed var(--border-accent);
+  border-radius: var(--radius-md);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+}
+
+.drop-placeholder-inner {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .section-title {
   font-size: 13px;
   font-weight: 600;
@@ -407,6 +433,28 @@ input[type="text"]:focus, button:focus-visible {
 
 .task-row-wrap.dragging .task-row {
   transition: none;
+}
+
+/* Long-press reorder: the whole wrap (not just the inner row) translates,
+ * so it composes independently of the swipe-to-reveal transform above. */
+.task-row-wrap.reorder-lifted {
+  position: relative;
+  z-index: 30;
+}
+
+.task-row-wrap.reorder-lifted .task-row {
+  transition: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: scale(1.02);
+}
+
+.reorder-insertion-line {
+  position: fixed;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--fill-accent);
+  pointer-events: none;
+  z-index: 40;
 }
 
 .task-checkbox {
