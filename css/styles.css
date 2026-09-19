@@ -400,6 +400,25 @@ input[type="text"]:focus, button:focus-visible {
   color: var(--on-danger);
 }
 
+/* Swipe-right-to-complete: revealed on the left edge as the row slides
+ * right, symmetrical to the edit/delete panel on the other side. */
+.task-row-complete-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: var(--fill-accent);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 22px;
+}
+
+.task-row-complete-bg svg {
+  width: 22px;
+  height: 22px;
+}
+
 .task-row {
   position: relative;
   background: var(--surface-2);

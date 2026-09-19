@@ -166,6 +166,7 @@ function render(items) {
 }
 
 const ROW_REVEAL = 128; // two 64px action buttons
+const COMPLETE_REVEAL = 96; // swipe-right-to-complete distance
 
 // ---------- Long-press drag reorder ----------
 // Long-pressing a row picks it up; dragging vertically tracks the finger
@@ -176,7 +177,7 @@ const ROW_REVEAL = 128; // two 64px action buttons
 // the dragged row (tracking the finger) visually fills. Dropping onto a
 // different time-of-day section moves the task there for good, same as
 // changing its time of day in the edit form would.
-const LONG_PRESS_MS = 450;
+const LONG_PRESS_MS = 300;
 const LONG_PRESS_MOVE_TOLERANCE = 10;
 const AUTO_SCROLL_EDGE = 70;
 const AUTO_SCROLL_STEP = 10;
@@ -399,6 +400,19 @@ async function finishReorder(y) {
   const noop = !target.sectionKey
     || (target.sectionKey === state.originalTarget.sectionKey && target.index === state.originalTarget.index);
   if (noop) return;
+
+  // A task already scheduled for the target time of day has nothing for
+  // this drop to become — there's no second "afternoon" card to create, so
+  // committing would just silently drop it from wherever it came from.
+  // Treat it as an invalid drop and let it snap back instead.
+  const sourceTimes = state.item.sourceTask.timeOfDay;
+  const times = Array.isArray(sourceTimes) ? sourceTimes : [sourceTimes];
+  const movingAcrossSections = target.sectionKey !== state.originalSectionKey;
+  if (movingAcrossSections && times.includes(target.sectionKey)) {
+    await refresh();
+    return;
+  }
+
   await commitReorder(state.item, state.originalSectionKey, target);
 }
 
@@ -432,13 +446,18 @@ function renderTaskRow(item, sectionKey) {
   actions.appendChild(editAction);
   actions.appendChild(deleteAction);
 
+  const completeBg = document.createElement('div');
+  completeBg.className = 'task-row-complete-bg';
+  completeBg.innerHTML = ICONS.check;
+
+  const completed = item.completedTimes.has(sectionKey);
   const row = document.createElement('div');
-  row.className = 'task-row' + (item.completed ? ' completed' : '');
+  row.className = 'task-row' + (completed ? ' completed' : '');
 
   const checkbox = document.createElement('button');
   checkbox.type = 'button';
   checkbox.className = 'task-checkbox';
-  checkbox.setAttribute('aria-label', item.completed ? 'Mark not done' : 'Mark done');
+  checkbox.setAttribute('aria-label', completed ? 'Mark not done' : 'Mark done');
   checkbox.innerHTML = ICONS.check;
 
   const labelBtn = document.createElement('button');
@@ -465,6 +484,7 @@ function renderTaskRow(item, sectionKey) {
   row.appendChild(labelBtn);
   row.appendChild(tag);
   wrap.appendChild(actions);
+  wrap.appendChild(completeBg);
   wrap.appendChild(row);
 
   // ----- swipe-to-reveal (edit / delete) + long-press drag reorder -----
@@ -527,7 +547,7 @@ function renderTaskRow(item, sectionKey) {
       if (closeOpenRow && closeOpenRow !== close) closeOpenRow();
       closeOpenRow = close;
     }
-    const x = Math.min(0, Math.max(-ROW_REVEAL, baseX + dx));
+    const x = Math.max(-ROW_REVEAL, Math.min(COMPLETE_REVEAL, baseX + dx));
     setX(x, false);
   }, { passive: false });
 
@@ -541,9 +561,18 @@ function renderTaskRow(item, sectionKey) {
     if (!dragging) return;
     dragging = false;
     const dx = t.clientX - startX;
-    isOpen = (baseX + dx) < -ROW_REVEAL / 2;
-    setX(isOpen ? -ROW_REVEAL : 0, true);
-    if (isOpen) closeOpenRow = close;
+    const rawX = baseX + dx;
+    if (rawX > COMPLETE_REVEAL / 2) {
+      // Swipe-right-to-complete is momentary, not a sticky reveal like the
+      // edit/delete side — it always snaps back, whether or not it commits.
+      isOpen = false;
+      setX(0, true);
+      toggleCompletion(item, sectionKey);
+    } else {
+      isOpen = rawX < -ROW_REVEAL / 2;
+      setX(isOpen ? -ROW_REVEAL : 0, true);
+      if (isOpen) closeOpenRow = close;
+    }
   }, { passive: true });
 
   wrap.addEventListener('touchcancel', () => {
@@ -554,7 +583,7 @@ function renderTaskRow(item, sectionKey) {
   checkbox.addEventListener('click', () => {
     if (Date.now() < suppressClickUntil) return;
     if (isOpen) { close(); return; }
-    toggleCompletion(item);
+    toggleCompletion(item, sectionKey);
   });
 
   labelBtn.addEventListener('click', () => {
@@ -580,13 +609,16 @@ function startEdit(item) {
   openTaskFormForEdit(item.sourceTask, (formData) => handleEditSubmit(item, formData));
 }
 
-async function toggleCompletion(item) {
+async function toggleCompletion(item, sectionKey) {
   const taskId = item.sourceTask.id;
   const date = item.date;
-  if (item.completed) {
+  const times = new Set(item.completedTimes);
+  if (times.has(sectionKey)) times.delete(sectionKey); else times.add(sectionKey);
+
+  if (times.size === 0) {
     await Completions.delete(taskId, date);
   } else {
-    await Completions.put({ taskId, date, completedAt: Date.now() });
+    await Completions.put({ taskId, date, completedAt: Date.now(), times: [...times] });
   }
   await refresh();
 }
