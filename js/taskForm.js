@@ -38,7 +38,12 @@ export function initTaskForm() {
 
   els.timePicker.querySelectorAll('.picker-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.selectedTime = btn.dataset.time;
+      const time = btn.dataset.time;
+      if (state.selectedTimes.has(time)) {
+        state.selectedTimes.delete(time);
+      } else {
+        state.selectedTimes.add(time);
+      }
       els.timeError.classList.remove('visible');
       paintTime();
     });
@@ -88,7 +93,7 @@ export function initTaskForm() {
 
 function paintTime() {
   els.timePicker.querySelectorAll('.picker-btn').forEach((b) => {
-    b.classList.toggle('selected', b.dataset.time === state.selectedTime);
+    b.classList.toggle('selected', state.selectedTimes.has(b.dataset.time));
   });
 }
 
@@ -150,7 +155,7 @@ function onSaveClick() {
     els.name.focus();
     return;
   }
-  if (!state.selectedTime) {
+  if (state.selectedTimes.size === 0) {
     els.timeError.classList.add('visible');
     return;
   }
@@ -167,7 +172,7 @@ function onSaveClick() {
   const formData = {
     name,
     category: els.category.value.trim() || 'other',
-    timeOfDay: state.selectedTime,
+    timeOfDay: ['morning', 'afternoon', 'evening'].filter((time) => state.selectedTimes.has(time)),
     recurrence,
   };
 
@@ -178,7 +183,7 @@ function onSaveClick() {
 
 export function openTaskFormForAdd(onSubmit, defaultDay = todayWeekdayIndex()) {
   state = {
-    selectedTime: null, selectedDays: new Set(), onceMode: false, defaultDay, onSubmit,
+    selectedTimes: new Set(), selectedDays: new Set(), onceMode: false, defaultDay, onSubmit,
   };
   els.title.textContent = 'Add task';
   els.save.textContent = 'Save task';
@@ -196,7 +201,7 @@ export function openTaskFormForEdit(task, onSubmit) {
     ? [weekdayIndexForDate(task.recurrence.date)]
     : [...task.recurrence.days];
   state = {
-    selectedTime: task.timeOfDay,
+    selectedTimes: new Set(Array.isArray(task.timeOfDay) ? task.timeOfDay : [task.timeOfDay]),
     selectedDays: new Set(days),
     onceMode: task.recurrence.type === 'once',
     onSubmit,

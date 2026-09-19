@@ -115,17 +115,6 @@ let closeOpenRow = null;
 // to the list mid-gesture.
 let currentGroups = null;
 
-function buildDropPlaceholder() {
-  const ph = document.createElement('div');
-  ph.className = 'task-row-wrap drop-placeholder';
-  ph.dataset.taskId = '';
-  const inner = document.createElement('div');
-  inner.className = 'drop-placeholder-inner';
-  inner.textContent = 'Drop here';
-  ph.appendChild(inner);
-  return ph;
-}
-
 // Builds the task-list markup for a given day into a fragment, independent
 // of whichever container it ends up in — used both for the real listContainer
 // and for the transient preview panel during a swipe drag.
@@ -146,14 +135,13 @@ function buildDayContent(items, dateISO, weekdayIdx) {
 
   const groups = groupByTimeOfDay(items);
   currentGroups = groups;
-  // All three sections always exist in the DOM (CSS hides empty ones)
-  // rather than being skipped, so a long-press drag always has somewhere
-  // to drop a task even into a time of day that's currently empty.
+  // All three sections always render, even ones with nothing scheduled —
+  // so a long-press drag never has to change the page layout to make room
+  // for a drop target, which used to shove the dragged row away from
+  // wherever the finger actually was the moment the drag started.
   for (const key of ['morning', 'afternoon', 'evening']) {
-    const groupItems = groups[key];
-
     const section = document.createElement('section');
-    section.className = 'section' + (groupItems.length === 0 ? ' section-empty' : '');
+    section.className = 'section';
     section.dataset.timeKey = key;
 
     const title = document.createElement('p');
@@ -163,11 +151,7 @@ function buildDayContent(items, dateISO, weekdayIdx) {
 
     const list = document.createElement('div');
     list.className = 'task-list';
-    if (groupItems.length === 0) {
-      list.appendChild(buildDropPlaceholder());
-    } else {
-      groupItems.forEach((item) => list.appendChild(renderTaskRow(item)));
-    }
+    groups[key].forEach((item) => list.appendChild(renderTaskRow(item, key)));
     section.appendChild(list);
 
     frag.appendChild(section);
@@ -185,11 +169,13 @@ const ROW_REVEAL = 128; // two 64px action buttons
 
 // ---------- Long-press drag reorder ----------
 // Long-pressing a row picks it up; dragging vertically tracks the finger
-// (compensating for auto-scroll so it doesn't drift), and every other row —
-// including the empty-section placeholders — is a candidate drop slot,
-// recomputed from fresh bounding rects each frame since scrolling moves them.
-// Dropping onto a different time-of-day section moves the task there for
-// good, same as changing its time of day in the edit form would.
+// (compensating for auto-scroll so it doesn't drift). Every other row in
+// the day — including the empty-section placeholders — has its document-
+// relative position captured once at drag start; as the dragged row passes
+// each one, it slides aside (a plain CSS transition) to open a gap, which
+// the dragged row (tracking the finger) visually fills. Dropping onto a
+// different time-of-day section moves the task there for good, same as
+// changing its time of day in the edit form would.
 const LONG_PRESS_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE = 10;
 const AUTO_SCROLL_EDGE = 70;
@@ -206,93 +192,113 @@ function sectionItems(key) {
   return currentGroups ? currentGroups[key] : [];
 }
 
-function collectDropSlots(excludeTaskId) {
-  return [...listContainer.querySelectorAll('.task-row-wrap')]
-    .filter((el) => el.dataset.taskId !== excludeTaskId)
-    .map((el) => ({
-      sectionKey: el.closest('.section').dataset.timeKey,
-      isPlaceholder: el.classList.contains('drop-placeholder'),
-      rect: el.getBoundingClientRect(),
-    }));
+// The dragged row's own spot in the flow is held open by an invisible
+// spacer (not the "Drop here" box from before — no visible element at all)
+// while the row itself becomes position:fixed and just follows the finger.
+// Moving the spacer through the real DOM as the target changes means the
+// browser's own layout does the work of opening/closing gaps — rows below
+// it, and section headers past the boundary it crosses, all reflow for
+// free, with no separate shifting logic needed to keep them in sync.
+function buildSpacer(height) {
+  const el = document.createElement('div');
+  el.className = 'reorder-spacer';
+  el.style.height = `${height}px`;
+  return el;
 }
 
-function resolveDropTarget(centerY, slots) {
+// Every other row's current center, freshly measured (cheap for a short
+// list, and necessary since the spacer's position — and therefore
+// everyone below it — changes as the drag progresses). A section with no
+// rows of its own (once the dragged one and the spacer are excluded) is
+// still represented by its empty .task-list, so dropping into an empty
+// time of day works the same way as dropping next to any other row.
+function collectLiveSlots(wrap) {
+  const slots = [];
+  for (const key of ['morning', 'afternoon', 'evening']) {
+    const section = listContainer.querySelector(`.section[data-time-key="${key}"]`);
+    if (!section) continue;
+    const list = section.querySelector('.task-list');
+    const rows = [...list.querySelectorAll('.task-row-wrap')].filter((el) => el !== wrap);
+    if (rows.length === 0) {
+      const rect = list.getBoundingClientRect();
+      slots.push({ sectionKey: key, isEmpty: true, center: rect.top + rect.height / 2 });
+    } else {
+      rows.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        slots.push({ sectionKey: key, isEmpty: false, el, center: rect.top + rect.height / 2 });
+      });
+    }
+  }
+  return slots;
+}
+
+function resolveLiveTarget(wrap, centerY) {
+  const slots = collectLiveSlots(wrap);
   if (slots.length === 0) return { sectionKey: null, index: 0 };
   let best = slots[0];
   let bestDist = Infinity;
   for (const slot of slots) {
-    const mid = slot.rect.top + slot.rect.height / 2;
-    const dist = Math.abs(centerY - mid);
+    const dist = Math.abs(centerY - slot.center);
     if (dist < bestDist) { bestDist = dist; best = slot; }
   }
-  if (best.isPlaceholder) {
-    return { sectionKey: best.sectionKey, index: 0, indicatorRect: best.rect, indicatorPos: 'over' };
-  }
-  const mid = best.rect.top + best.rect.height / 2;
-  const after = centerY > mid;
-  const sameSectionReal = slots.filter((s) => s.sectionKey === best.sectionKey && !s.isPlaceholder);
-  const index = sameSectionReal.indexOf(best) + (after ? 1 : 0);
-  return { sectionKey: best.sectionKey, index, indicatorRect: best.rect, indicatorPos: after ? 'after' : 'before' };
+  if (best.isEmpty) return { sectionKey: best.sectionKey, index: 0 };
+  const after = centerY > best.center;
+  const sameSection = slots.filter((s) => s.sectionKey === best.sectionKey && !s.isEmpty);
+  const index = sameSection.indexOf(best) + (after ? 1 : 0);
+  return { sectionKey: best.sectionKey, index };
 }
 
-function insertionLineEl() {
-  let line = document.getElementById('reorderInsertionLine');
-  if (!line) {
-    line = document.createElement('div');
-    line.id = 'reorderInsertionLine';
-    line.className = 'reorder-insertion-line';
-    line.hidden = true;
-    document.body.appendChild(line);
-  }
-  return line;
+function spacerRefEl(target) {
+  const section = listContainer.querySelector(`.section[data-time-key="${target.sectionKey}"] .task-list`);
+  const rows = [...section.querySelectorAll('.task-row-wrap')].filter((el) => el !== reorderState.wrap);
+  return { section, refEl: rows[target.index] || null };
 }
 
-function positionInsertionLine(target) {
-  const line = insertionLineEl();
-  if (!target || !target.sectionKey) { line.hidden = true; return; }
-  const listRect = listContainer.getBoundingClientRect();
-  const y = target.indicatorPos === 'over'
-    ? target.indicatorRect.top + target.indicatorRect.height / 2
-    : target.indicatorPos === 'after' ? target.indicatorRect.bottom : target.indicatorRect.top;
-  line.hidden = false;
-  line.style.left = `${listRect.left}px`;
-  line.style.width = `${listRect.width}px`;
-  line.style.top = `${y}px`;
+// FLIP: measure every row/header before the spacer moves, move it (an
+// instant, unanimated DOM reflow), then measure again and animate each
+// element that actually shifted from its old position to its new one.
+function flipTargets() {
+  return [...listContainer.querySelectorAll('.task-row-wrap:not(.reorder-lifted), .section-title')];
 }
 
-function computeCurrentTarget() {
-  const s = reorderState;
-  const centerY = (s.lastClientY - s.startTouchY + s.initialStaticTop) + s.height / 2;
-  const slots = collectDropSlots(s.item.sourceTask.id);
-  return resolveDropTarget(centerY, slots);
-}
+function moveSpacerWithFlip(target) {
+  const els = flipTargets();
+  const before = new Map(els.map((el) => [el, el.getBoundingClientRect().top]));
 
-// If the dragged task was the only item in its section, excluding it leaves
-// that section with no slot to represent "drop it back here" — give it a
-// temporary placeholder for the duration of the drag, same as a section
-// that started out empty.
-function ensureOriginPlaceholder(sectionKey, draggedTaskId) {
-  const section = listContainer.querySelector(`.section[data-time-key="${sectionKey}"]`);
-  if (!section) return;
-  const realRows = [...section.querySelectorAll('.task-row-wrap:not(.drop-placeholder)')];
-  const remaining = realRows.filter((el) => el.dataset.taskId !== draggedTaskId);
-  if (remaining.length > 0 || section.querySelector('.drop-placeholder')) return;
-  const ph = buildDropPlaceholder();
-  ph.dataset.synthetic = 'true';
-  section.querySelector('.task-list').appendChild(ph);
+  const { section, refEl } = spacerRefEl(target);
+  if (refEl) section.insertBefore(reorderState.spacer, refEl);
+  else section.appendChild(reorderState.spacer);
+
+  flipTargets().forEach((el) => {
+    const prevTop = before.get(el);
+    if (prevTop === undefined) return;
+    const delta = prevTop - el.getBoundingClientRect().top;
+    if (Math.abs(delta) < 0.5) return;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${delta}px)`;
+    void el.offsetHeight; // force the inverted position to commit before animating away from it
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 150ms ease';
+      el.style.transform = '';
+    });
+  });
 }
 
 function stopReorderVisuals() {
   if (reorderRafId) cancelAnimationFrame(reorderRafId);
   reorderRafId = null;
   if (reorderState) {
-    reorderState.wrap.style.transform = '';
-    reorderState.wrap.style.touchAction = '';
-    reorderState.wrap.classList.remove('reorder-lifted');
+    const { wrap, spacer } = reorderState;
+    wrap.style.position = '';
+    wrap.style.top = '';
+    wrap.style.left = '';
+    wrap.style.width = '';
+    wrap.style.margin = '';
+    wrap.style.touchAction = '';
+    wrap.classList.remove('reorder-lifted');
+    if (spacer.parentNode) spacer.remove();
   }
   listContainer.classList.remove('reordering');
-  listContainer.querySelectorAll('.drop-placeholder[data-synthetic="true"]').forEach((el) => el.remove());
-  insertionLineEl().hidden = true;
 }
 
 function reorderTick() {
@@ -302,49 +308,76 @@ function reorderTick() {
   if (s.lastClientY < AUTO_SCROLL_EDGE) window.scrollBy(0, -AUTO_SCROLL_STEP);
   else if (s.lastClientY > vh - AUTO_SCROLL_EDGE) window.scrollBy(0, AUTO_SCROLL_STEP);
 
-  const dy = (s.lastClientY - s.startTouchY) + (window.scrollY - s.initialScrollY);
-  s.wrap.style.transform = `translateY(${dy}px)`;
-  positionInsertionLine(computeCurrentTarget());
+  const top = s.lastClientY - s.grabOffsetY;
+  s.wrap.style.top = `${top}px`;
+
+  const target = resolveLiveTarget(s.wrap, top + s.height / 2);
+  if (target.sectionKey
+    && (target.sectionKey !== s.currentTarget.sectionKey || target.index !== s.currentTarget.index)) {
+    moveSpacerWithFlip(target);
+    s.currentTarget = target;
+  }
 
   reorderRafId = requestAnimationFrame(reorderTick);
 }
 
-async function commitReorder(item, target) {
+// A task can now be scheduled for more than one time of day, so dragging
+// one of its rows into a different section doesn't replace its whole
+// schedule — it swaps just that one membership (the section dragged out of,
+// for the section dragged into), leaving any other times untouched.
+function nextTimesForDrag(sourceTask, fromKey, toKey) {
+  const times = Array.isArray(sourceTask.timeOfDay) ? sourceTask.timeOfDay : [sourceTask.timeOfDay];
+  if (fromKey === toKey) return times;
+  const set = new Set(times);
+  set.delete(fromKey);
+  set.add(toKey);
+  return ['morning', 'afternoon', 'evening'].filter((t) => set.has(t));
+}
+
+async function commitReorder(item, fromKey, target) {
   const sourceTask = item.sourceTask;
   const targetKey = target.sectionKey;
+  const draggedTask = { ...sourceTask, timeOfDay: nextTimesForDrag(sourceTask, fromKey, targetKey) };
+
   const currentItems = sectionItems(targetKey)
     .filter((i) => i.sourceTask.id !== sourceTask.id)
     .map((i) => i.sourceTask);
   const insertAt = Math.max(0, Math.min(currentItems.length, target.index));
-  currentItems.splice(insertAt, 0, sourceTask);
-  await Promise.all(currentItems.map((t, i) => Tasks.put({ ...t, timeOfDay: targetKey, order: i })));
+  currentItems.splice(insertAt, 0, draggedTask);
+  await Promise.all(currentItems.map((t, i) => Tasks.put({ ...t, order: i })));
   await refresh();
 }
 
-function startReorder(wrap, item, y) {
+function startReorder(wrap, item, sectionKey, y) {
   if (isTaskFormOpen() || reorderState) return;
   if (closeOpenRow) { closeOpenRow(); closeOpenRow = null; }
   if (navigator.vibrate) navigator.vibrate(12);
 
-  const originalSectionKey = item.task.timeOfDay;
-  ensureOriginPlaceholder(originalSectionKey, item.sourceTask.id);
   listContainer.classList.add('reordering');
 
   const rect = wrap.getBoundingClientRect();
+  const spacer = buildSpacer(rect.height);
+  wrap.parentNode.insertBefore(spacer, wrap);
+
+  wrap.style.position = 'fixed';
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.width = `${rect.width}px`;
+  wrap.style.margin = '0';
   wrap.style.touchAction = 'none';
   wrap.classList.add('reorder-lifted');
 
-  const originGroupIds = sectionItems(originalSectionKey).map((i) => i.sourceTask.id);
+  const startTarget = resolveLiveTarget(wrap, rect.top + rect.height / 2);
   reorderState = {
     wrap,
     item,
-    startTouchY: y,
-    initialStaticTop: rect.top,
+    spacer,
+    originalSectionKey: sectionKey,
+    grabOffsetY: y - rect.top,
     height: rect.height,
-    initialScrollY: window.scrollY,
     lastClientY: y,
-    originalSectionKey,
-    originalIndex: originGroupIds.indexOf(item.sourceTask.id),
+    currentTarget: startTarget,
+    originalTarget: startTarget,
   };
   reorderRafId = requestAnimationFrame(reorderTick);
 }
@@ -357,16 +390,16 @@ function updateReorder(y) {
 async function finishReorder(y) {
   if (!reorderState) return;
   reorderState.lastClientY = y;
-  const target = computeCurrentTarget();
   const state = reorderState;
+  const target = state.currentTarget;
   stopReorderVisuals();
   reorderState = null;
   suppressClickUntil = Date.now() + 500;
 
   const noop = !target.sectionKey
-    || (target.sectionKey === state.originalSectionKey && target.index === state.originalIndex);
+    || (target.sectionKey === state.originalTarget.sectionKey && target.index === state.originalTarget.index);
   if (noop) return;
-  await commitReorder(state.item, target);
+  await commitReorder(state.item, state.originalSectionKey, target);
 }
 
 function cancelReorder() {
@@ -376,7 +409,7 @@ function cancelReorder() {
   suppressClickUntil = Date.now() + 500;
 }
 
-function renderTaskRow(item) {
+function renderTaskRow(item, sectionKey) {
   const wrap = document.createElement('div');
   wrap.className = 'task-row-wrap';
   wrap.dataset.taskId = item.sourceTask.id;
@@ -464,7 +497,7 @@ function renderTaskRow(item) {
     longPressCancelled = false;
     if (!isOpen) {
       longPressTimer = setTimeout(() => {
-        if (!longPressCancelled) startReorder(wrap, item, t.clientY);
+        if (!longPressCancelled) startReorder(wrap, item, sectionKey, t.clientY);
       }, LONG_PRESS_MS);
     }
   }, { passive: true });
@@ -472,6 +505,12 @@ function renderTaskRow(item) {
   wrap.addEventListener('touchmove', (e) => {
     const t = e.touches[0];
     if (reorderState && reorderState.wrap === wrap) {
+      // touch-action:none (set when the drag started) is only reliably
+      // honored by some browsers for gestures that begin *after* it's set —
+      // since this same touch sequence started before that, the browser can
+      // still try to scroll the page underneath the drag unless explicitly
+      // told not to on every move.
+      e.preventDefault();
       updateReorder(t.clientY);
       return;
     }
@@ -490,7 +529,7 @@ function renderTaskRow(item) {
     }
     const x = Math.min(0, Math.max(-ROW_REVEAL, baseX + dx));
     setX(x, false);
-  }, { passive: true });
+  }, { passive: false });
 
   wrap.addEventListener('touchend', (e) => {
     clearTimeout(longPressTimer);
@@ -782,6 +821,12 @@ function sameRecurrence(a, b) {
   return a.days.length === b.days.length && a.days.every((d, i) => d === b.days[i]);
 }
 
+function sameTimeOfDay(a, b) {
+  const aTimes = Array.isArray(a) ? a : [a];
+  const bTimes = Array.isArray(b) ? b : [b];
+  return aTimes.length === bTimes.length && aTimes.every((time, i) => time === bTimes[i]);
+}
+
 const editScopeOverlay = document.getElementById('editScopeOverlay');
 const editScopeSubtitle = document.getElementById('editScopeSubtitle');
 const editScopeOnceBtn = document.getElementById('editScopeOnce');
@@ -802,7 +847,7 @@ async function handleEditSubmit(item, formData) {
   const recurrenceChanged = !sameRecurrence(formData.recurrence, source.recurrence);
   const fieldsChanged = formData.name !== source.name
     || formData.category !== source.category
-    || formData.timeOfDay !== source.timeOfDay;
+    || !sameTimeOfDay(formData.timeOfDay, source.timeOfDay);
 
   if (!recurrenceChanged && !fieldsChanged) return;
 
@@ -838,7 +883,9 @@ editScopeOnceBtn.addEventListener('click', async () => {
   const overrides = {};
   if (formData.name !== source.name) overrides.name = formData.name;
   if (formData.category !== source.category) overrides.category = formData.category;
-  if (formData.timeOfDay !== source.timeOfDay) overrides.timeOfDay = formData.timeOfDay;
+  if (!sameTimeOfDay(formData.timeOfDay, source.timeOfDay)) {
+    overrides.timeOfDay = formData.timeOfDay;
+  }
   await Exceptions.put({ taskId: source.id, date, type: 'override', overrides });
   editScopeOverlay.hidden = true;
   pendingScopeEdit = null;

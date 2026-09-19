@@ -3,6 +3,10 @@ export function isScheduledOn(task, dateISO, weekdayIndex) {
   return task.recurrence.days.includes(weekdayIndex);
 }
 
+function timesForTask(task) {
+  return Array.isArray(task.timeOfDay) ? task.timeOfDay : [task.timeOfDay];
+}
+
 // Combines tasks + that date's exceptions + that date's completions into the
 // list that should actually render for the given day. Skips are dropped,
 // overrides are applied, and each item carries whether it's checked off.
@@ -31,7 +35,8 @@ export function buildListForDate(tasks, exceptions, completions, date, weekday) 
 
   const bucketOrder = { morning: 0, afternoon: 1, evening: 2 };
   items.sort((a, b) => {
-    const bucketDiff = bucketOrder[a.task.timeOfDay] - bucketOrder[b.task.timeOfDay];
+    const bucketDiff = Math.min(...timesForTask(a.task).map((time) => bucketOrder[time]))
+      - Math.min(...timesForTask(b.task).map((time) => bucketOrder[time]));
     if (bucketDiff !== 0) return bucketDiff;
     // Manually reordered tasks carry an explicit `order`; anything from
     // before that feature (or never touched since) falls back to creation
@@ -45,8 +50,8 @@ export function buildListForDate(tasks, exceptions, completions, date, weekday) 
 
 export function groupByTimeOfDay(items) {
   return {
-    morning: items.filter((i) => i.task.timeOfDay === 'morning'),
-    afternoon: items.filter((i) => i.task.timeOfDay === 'afternoon'),
-    evening: items.filter((i) => i.task.timeOfDay === 'evening'),
+    morning: items.filter((i) => timesForTask(i.task).includes('morning')),
+    afternoon: items.filter((i) => timesForTask(i.task).includes('afternoon')),
+    evening: items.filter((i) => timesForTask(i.task).includes('evening')),
   };
 }

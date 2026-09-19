@@ -55,7 +55,8 @@ export function initActionSheet(cb) {
 export function openActionSheet(item) {
   currentItem = item;
   const task = item.task;
-  const timeLabel = task.timeOfDay[0].toUpperCase() + task.timeOfDay.slice(1);
+  const times = Array.isArray(task.timeOfDay) ? task.timeOfDay : [task.timeOfDay];
+  const timeLabel = times.map((time) => time[0].toUpperCase() + time.slice(1)).join(', ');
   els.actionTitle.textContent = task.name;
   els.actionSubtitle.textContent = task.recurrence.type === 'once'
     ? `${timeLabel} · One-time task`
