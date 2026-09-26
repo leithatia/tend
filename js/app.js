@@ -7,7 +7,7 @@ import {
 import { emojiForCategory, tintForCategory } from './categories.js';
 import { ICONS } from './icons.js';
 import { initTaskForm, openTaskFormForAdd, openTaskFormForEdit, isTaskFormOpen } from './taskForm.js';
-import { initActionSheet, openActionSheet, openDeleteConfirmForItem } from './actionSheet.js';
+import { initActionSheet, openDeleteConfirmForItem } from './actionSheet.js';
 import { downloadExport, importFromFile, getLastExportAt } from './backup.js';
 
 const appRoot = document.getElementById('app');
@@ -588,8 +588,7 @@ function renderTaskRow(item, sectionKey) {
 
   labelBtn.addEventListener('click', () => {
     if (Date.now() < suppressClickUntil) return;
-    if (isOpen) { close(); return; }
-    openActionSheet(item);
+    if (isOpen) close();
   });
 
   editAction.addEventListener('click', () => {
@@ -814,9 +813,8 @@ addTaskFab.addEventListener('click', () => {
   }, selectedWeekday);
 });
 
-// ---------- Edit / delete (via action sheet) ----------
+// ---------- Delete (via swipe, confirm sheet) ----------
 initActionSheet({
-  onEdit: startEdit,
   onDeleteOnce: async (item) => {
     const taskId = item.sourceTask.id;
     const { date } = item;

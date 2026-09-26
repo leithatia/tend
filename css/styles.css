@@ -369,7 +369,10 @@ input[type="text"]:focus, button:focus-visible {
 
 .task-row-actions {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 128px; /* two 64px buttons — must match ROW_REVEAL in app.js */
   display: flex;
   justify-content: flex-end;
   align-items: stretch;
@@ -404,8 +407,11 @@ input[type="text"]:focus, button:focus-visible {
  * right, symmetrical to the edit/delete panel on the other side. */
 .task-row-complete-bg {
   position: absolute;
-  inset: 0;
-  border-radius: var(--radius-md);
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 96px; /* must match COMPLETE_REVEAL in app.js */
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
   background: var(--fill-accent);
   color: var(--on-accent);
   display: flex;
